@@ -6,7 +6,7 @@
         ,set_api_key/1
         ]).
 
--include("kazoo_speech.hrl").
+-include("../kazoo_speech.hrl").
 
 -define(ISPEECH_VOICE_MAPPINGS
        ,[{<<"female/en-us">>, <<"usenglishfemale">>}
