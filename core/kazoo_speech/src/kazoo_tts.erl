@@ -13,6 +13,7 @@
         ,default_voice/0, set_default_voice/1
 
         ,provider_module/1
+        ,test_lager/0, test_lager_orig/0
         ]).
 
 -include("kazoo_speech.hrl").
@@ -80,3 +81,13 @@ default_voice() ->
 set_default_voice(Voice) ->
     {'ok', _} = kapps_config:set_default(?MOD_CONFIG_CAT, <<"tts_voice">>, Voice),
     'ok'.
+
+-spec test_lager() -> 'ok'.
+test_lager() ->
+  lager:log(warning, self(), "TEST Warning message.~n"),
+  'ok'.
+
+-spec test_lager_orig() -> 'ok'.
+test_lager_orig() ->
+  lager:warning("TEST Warning message.~n"),
+  'ok'.
