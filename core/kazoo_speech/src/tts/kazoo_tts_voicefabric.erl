@@ -6,7 +6,7 @@
         ,set_api_key/1
         ]).
 
--include("../kazoo_speech.hrl").
+-include("kazoo_speech.hrl").
 
 -define(VOICEFABRIC_VOICE_MAPPINGS
        ,[{<<"male/ru-ru">>, <<"Владимир8000"/utf8>>}

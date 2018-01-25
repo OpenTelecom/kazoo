@@ -1,12 +1,24 @@
--module(kazoo_tts_ispeech).
+-module(kazoo_tts_aws_polly).
 
 -behaviour(gen_tts_provider).
 
 -export([create/4
-        ,set_api_key/1
-        ]).
+  , set_api_key/1
+  , check_aws_config/0
+  , get_aws_config/0
+  , check_voice/0]).
 
 -include("kazoo_speech.hrl").
+-include_lib("erlcloud/include/erlcloud_aws.hrl").
+
+%%{
+%%  "data": {
+%%    "default": {
+%%    "tts_url_aws_polly": "https://polly.eu-west-2.amazonaws.com/v1/speech"
+%%    },
+%%  "id": "speech"
+%%  }
+%%}
 
 -define(ISPEECH_VOICE_MAPPINGS
        ,[{<<"female/en-us">>, <<"usenglishfemale">>}
@@ -55,6 +67,13 @@
         ]
        ).
 -define(ISPEECH_TTS_URL, kapps_config:get_string(?MOD_CONFIG_CAT, <<"tts_url_ispeech">>, <<"http://api.ispeech.org/api/json">>)).
+
+-define(AWS_POLLY_SPEECH_METHOD, <<"POST">>).
+-define(AWS_POLLY_VOICES_URL, <<"https://polly.eu-west-2.amazonaws.com/v1/voices">>).
+-define(AWS_POLLY_VOICES_METHOD, <<"GET">>).
+-define(AWS_POLLY_VOICES_LANGUAGE_CODE_MAP, #{"LanguageCode" => <<"en-GB">>}).
+-define(AWS_POLLY_VOICES_NEXT_TOKEN_MAP, #{"NextToken" => 'none'}).
+
 
 -spec set_api_key(kz_term:ne_binary()) -> 'ok'.
 set_api_key(Key) ->
@@ -118,3 +137,58 @@ create_response({'ok', _Code, RespHeaders, Content}) ->
     lager:warning("creating speech file failed with code ~p: ~p", [_Code, Content]),
     _ = [lager:debug("hdr: ~p", [H]) || H <- RespHeaders],
     {'error', 'tts_provider_failure', kz_json:get_value(<<"message">>, kz_json:decode(Content))}.
+
+-spec get_aws_config() -> aws_config().
+get_aws_config() ->
+    {_ok, {_Protocol,_UserInfo, Host, _Port, _Path, _Query}} = http_uri:parse(?AWS_POLLY_VOICES_URL),
+    [_Service |[ Region | _ ]] = re:split(Host, "[.]",[{return,list}]),
+    application:set_env(erlcloud, aws_access_key_id, "AKIAIFHXKQEEHHMCT77Q"),
+    application:set_env(erlcloud, aws_secret_access_key, "my_aws_secret_access_key"),
+    application:set_env(erlcloud, aws_security_token, "my_aws_security_token"),
+    application:set_env(erlcloud, aws_region, Region),
+    io:format("Definded in enviroment region is ~p ~n", [application:get_env(erlcloud, aws_region)]),
+    Config = erlcloud_aws:default_config(),
+    io:format("~p=~p~n",[aws_region, Config#aws_config.aws_region]),
+    io:format("~p=~p~n",[aws_access_key_id, Config#aws_config.access_key_id]).
+%%    Config.
+
+-spec check_aws_config() -> any().
+check_aws_config() ->
+    Config = get_aws_config(),
+    Config#aws_config.aws_region.
+
+%%check_aws_region(#aws_config{aws_region = AwsRegion} = Config) ->
+%%    Region = case AwsRegion of
+%%                 undefined -> io:format("Region is undefined");
+%%                 _ -> AwsRegion
+%%             end
+
+-spec check_voice() -> any().
+check_voice() ->
+    Method = ?AWS_POLLY_VOICES_METHOD,
+    {_ok, {Protocol,_UserInfo, Host, Port, Path, _Query}} = http_uri:parse(?AWS_POLLY_VOICES_URL),
+    [Service |[ _Region | _ ]] = re:split(Host, "[.]",[{return,list}]),
+    Params = maps:to_list(maps:merge(?AWS_POLLY_VOICES_LANGUAGE_CODE_MAP, ?AWS_POLLY_VOICES_NEXT_TOKEN_MAP)),
+    Config = get_aws_config(),
+%%    io:format("Method=~p~nProtocol=~p~nHost=~p~nPort=~p~nPath=~p~nParams=~p~nService=~p~nConfig=~p~nRegion=~p~n",
+%%        [Method,Protocol,Host,Port,Path,Params,Service,Config,Region]),
+%%  erlcloud:aws_request4(Method, Protocol, Host, Port, Path, Params, Service, Config).
+    case erlcloud_aws:aws_request4(Method, Protocol, Host, Port, Path, Params, Service,
+        Config) of
+    {ok, RespBody} ->
+        {ok, jsx:decode(RespBody)};
+    {error, Reason} ->
+        {error, Reason}
+    end.
+
+
+%%-spec get_lang_pair() -> map().
+%%get_lang_pair() ->
+%%  Map = ?AWS_POLLY_VOICES_LANGUAGE_CODE_MAP,
+%%  [Key|_Other] = maps:keys(Map),
+%%  Value = maps:get(Key,Map),
+%%  io:format("Key=~p, Value=~p ~n",[Key,Value]).
+
+
+
+
