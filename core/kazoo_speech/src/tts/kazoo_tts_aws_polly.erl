@@ -12,69 +12,35 @@
 
 -include("kazoo_speech.hrl").
 -include_lib("erlcloud/include/erlcloud_aws.hrl").
--include_lib("lhttpc/include/lhttpc.hrl").
 
 %%{
 %%    "data": {
 %%        "default": {
-%%            "tts_url_aws_polly": "https://polly.eu-west-2.amazonaws.com/v1/speech",
+%%            "tts_aws_polly_url": "https://polly.eu-west-2.amazonaws.com/v1/speech",
 %%            "tts_aws_key_id": "AKIAIFHXKQEEHHMCT77Q",
-%%            "tts_aws_secret_key": "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"
+%%            "tts_aws_secret_key": "RhPmUuGCVyyW6a3bwHU5lvFsfzTo1AWVq6YGqCcr",
+%%            "tts_speed": 22050,
+%%            "tts_media_format": "mp3",
+%%            "tts_provider": "aws_polly"
 %%        },
 %%        "id": "speech"
 %%    }
 %%}
 
 -define(ISPEECH_VOICE_MAPPINGS
-       ,[{<<"female/en-us">>, <<"usenglishfemale">>}
-        ,{<<"male/en-us">>, <<"usenglishmale">>}
-        ,{<<"female/en-ca">>, <<"caenglishfemale">>}
-        ,{<<"female/en-au">>, <<"auenglishfemale">>}
-        ,{<<"female/en-gb">>, <<"ukenglishfemale">>}
-        ,{<<"male/en-gb">>, <<"ukenglishmale">>}
-        ,{<<"female/es-us">>, <<"usspanishfemale">>}
-        ,{<<"male/es-us">>, <<"usspanishmale">>}
-        ,{<<"female/us-us">>, <<"usspanishfemale">>}
-        ,{<<"female/zh-cn">>, <<"chchinesefemale">>}
-        ,{<<"male/zh-cn">>, <<"chchinesemale">>}
-        ,{<<"female/zh-hk">>, <<"hkchinesefemale">>}
-        ,{<<"female/zh-tw">>, <<"twchinesefemale">>}
-        ,{<<"female/ja-jp">>, <<"jpjapanesefemale">>}
-        ,{<<"male/ja-jp">>, <<"jpjapanesemale">>}
-        ,{<<"female/ko-kr">>, <<"krkoreanfemale">>}
-        ,{<<"male/ko-kr">>, <<"krkoreanmale">>}
-        ,{<<"female/da-dk">>, <<"eurdanishfemale">>}
-        ,{<<"female/de-de">>, <<"eurgermanfemale">>}
-        ,{<<"male/de-de">>, <<"eurgermanmale">>}
-        ,{<<"female/ca-es">>, <<"eurcatalanfemale">>}
-        ,{<<"female/es-es">>, <<"eurspanishfemale">>}
-        ,{<<"male/es-es">>, <<"eurspanishmale">>}
-        ,{<<"female/fi-fi">>, <<"eurfinnishfemale">>}
-        ,{<<"female/fr-ca">>, <<"cafrenchfemale">>}
-        ,{<<"male/fr-ca">>, <<"cafrenchmale">>}
-        ,{<<"female/fr-fr">>, <<"eurfrenchfemale">>}
-        ,{<<"male/fr-fr">>, <<"eurfrenchmale">>}
-        ,{<<"female/it-it">>, <<"euritalianfemale">>}
-        ,{<<"male/it-it">>, <<"euritalianmale">>}
-        ,{<<"female/nb-no">>, <<"eurnorwegianfemale">>}
-        ,{<<"female/nl-nl">>, <<"eurdutchfemale">>}
-        ,{<<"female/pl-pl">>, <<"eurpolishfemale">>}
-        ,{<<"female/pt-br">>, <<"brportuguesefemale">>}
-        ,{<<"female/pt-pt">>, <<"eurportuguesefemale">>}
-        ,{<<"male/pt-pt">>, <<"eurportuguesemale">>}
-        ,{<<"female/ru-ru">>, <<"rurussianfemale">>}
-        ,{<<"male/ru-ru">>, <<"rurussianmale">>}
-        ,{<<"female/sv-se">>, <<"swswedishfemale">>}
-        ,{<<"female/hu-hu">>, <<"huhungarianfemale">>}
-        ,{<<"female/cs-cz">>, <<"eurczechfemale">>}
-        ,{<<"female/tr-tr">>, <<"eurturkishfemale">>}
-        ,{<<"male/tr-tr">>, <<"eurturkishmale">>}
+       ,[{<<"female/en-us">>, <<"Kimberly">>}
+        ,{<<"male/en-us">>,   <<"Justin">>}
+        ,{<<"female/en-ca">>, <<"Kimberly">>}
+        ,{<<"male/en-ca">>,   <<"Justin">>}
+        ,{<<"female/en-au">>, <<"Nicole">>}
+        ,{<<"male/en-au">>,   <<"Russell">>}
+        ,{<<"female/en-gb">>, <<"Amy">>}
+        ,{<<"male/en-gb">>,   <<"Brian">>}
         ]
        ).
 
--define(ISPEECH_TTS_URL, kapps_config:get_string(?MOD_CONFIG_CAT, <<"tts_url_ispeech">>, <<"http://api.ispeech.org/api/json">>)).
-
 -define(AWS_POLLY_SPEECH_METHOD, 'post').
+
 -define(AWS_POLLY_VOICES_URL, <<"https://polly.eu-west-2.amazonaws.com/v1/voices">>).
 -define(AWS_POLLY_VOICES_METHOD, 'get').
 -define(AWS_POLLY_VOICES_LANGUAGE_CODE_MAP, #{<<"LanguageCode">> => <<"en-GB">>}).
@@ -98,19 +64,31 @@ set_aws_secret_key(Key) ->
 -spec create(kz_term:ne_binary(), kz_term:ne_binary(), kz_term:ne_binary(), kz_term:proplist()) -> create_resp().
 create(Text, Voice, Format, Options) ->
     VoiceMappings = ?ISPEECH_VOICE_MAPPINGS,
+
     case props:get_value(kz_term:to_lower_binary(Voice), VoiceMappings) of
         'undefined' ->
             {'error', 'invalid_voice'};
-        ISpeechVoice ->
-            make_request(Text, ISpeechVoice, Format, Options)
+        VoiceId ->
+            make_request(Text, VoiceId, Format, Options)
     end.
 
 -spec make_request(kz_term:ne_binary(), kz_term:ne_binary(), kz_term:ne_binary(), kz_term:proplist()) -> create_resp().
-make_request(Text, ISpeechVoice, Format, Options) ->
-    BaseUrl = ?ISPEECH_TTS_URL,
+make_request(Text, VoiceId, Format, Options) ->
+    BaseUrl = kapps_config:get_string(?MOD_CONFIG_CAT, <<"tts_aws_polly_url">>),
+
+    io:format("~nBaseUrl=~p~nText=~p~nVoiceId=~p~nFormat=~p~nOptions=~p~n",[BaseUrl,Text,VoiceId,Format,Options]),
+%%    BaseUrl = ?AWS_POLLY_VOICES_URL,
+%%    Format = kazoo_tts:default_media_format()
+
+%%    {Service, Config} = get_aws_config(),
+%%    Method = ?AWS_POLLY_SPEECH_METHOD,
+%%    {'ok', {ProtocolAtom,_UserInfo, Host, Port, Path, _Query}} = http_uri:parse(binary_to_list(?AWS_POLLY_VOICES_URL)),
+%%    Protocol = atom_to_list(ProtocolAtom),
+%%    Params = maps:to_list(?AWS_POLLY_VOICES_LANGUAGE_CODE_MAP),
+%%    Region = Config#aws_config.aws_region,
 
     Props = [{<<"text">>, Text}
-            ,{<<"voice">>, ISpeechVoice}
+            ,{<<"voice">>, VoiceId}
             ,{<<"format">>, Format}
             ,{<<"action">>, <<"convert">>}
             ,{<<"apikey">>, ?TTS_API_KEY}
@@ -157,13 +135,14 @@ create_response({'ok', _Code, RespHeaders, Content}) ->
 
 -spec get_aws_config() -> {string(),aws_config()}.
 get_aws_config() ->
+%%    Uri = kapps_config:get_string(?MOD_CONFIG_CAT, <<"tts_aws_polly_url">>),
     {_ok, {_Protocol,_UserInfo, Host, _Port, _Path, _Query}} = http_uri:parse(binary_to_list(?AWS_POLLY_VOICES_URL)),
     [Service |[ Region | _ ]] = re:split(Host, "[.]",[{return,list}]),
     {
         Service,
         #aws_config{
-        access_key_id = "AKIAIFHXKQEEHHMCT77Q",
-        secret_access_key = "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",
+        access_key_id = kapps_config:get_string(?MOD_CONFIG_CAT, <<"tts_aws_key_id">>),
+        secret_access_key = kapps_config:get_string(?MOD_CONFIG_CAT, <<"tts_aws_secret_key">>),
         security_token = 'undefined',
         aws_region = Region,
         http_client = 'httpc'}
@@ -186,7 +165,7 @@ check_voice() ->
     Protocol = atom_to_list(ProtocolAtom),
     Params = maps:to_list(?AWS_POLLY_VOICES_LANGUAGE_CODE_MAP),
     Region = Config#aws_config.aws_region,
-    io:format("Method=~p~nProtocol=~p~nHost=~p~nPort=~p~nPath=~p~nParams=~p~nService=~p~nRegion=~p~n",
+    lager:debug("Method=~p~nProtocol=~p~nHost=~p~nPort=~p~nPath=~p~nParams=~p~nService=~p~nRegion=~p~n",
         [Method,Protocol,Host,Port,Path,Params,Service,Region]),
     case erlcloud_aws:aws_request4(Method, Protocol, Host, Port, Path, Params, Service,
         Config) of

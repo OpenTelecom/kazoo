@@ -11,6 +11,7 @@
         ,default_provider/0, default_provider/1, set_default_provider/1
         ,default_language/0, set_default_language/1
         ,default_voice/0, set_default_voice/1
+        ,default_media_format/0
 
         ,provider_module/1
         ]).
@@ -23,7 +24,7 @@ create(Text) ->
 
 -spec create(kz_term:ne_binary(), kz_term:ne_binary()) -> create_resp().
 create(Text, Voice) ->
-    create(Text, Voice, <<"wav">>).
+    create(Text, Voice, kazoo_tts:default_media_format()).
 
 -spec create(kz_term:ne_binary(), kz_term:ne_binary(), kz_term:ne_binary()) -> create_resp().
 create(Text, Voice, Format) ->
@@ -80,3 +81,7 @@ default_voice() ->
 set_default_voice(Voice) ->
     {'ok', _} = kapps_config:set_default(?MOD_CONFIG_CAT, <<"tts_voice">>, Voice),
     'ok'.
+
+-spec default_media_format() -> kz_term:ne_binary().
+default_media_format() ->
+    kapps_config:get_binary(?MOD_CONFIG_CAT, <<"tts_media_format">>, <<"wav">>).
