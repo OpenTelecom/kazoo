@@ -87,15 +87,15 @@ make_request(Text, VoiceId, Format, Options) ->
 %%    Params = maps:to_list(?AWS_POLLY_VOICES_LANGUAGE_CODE_MAP),
 %%    Region = Config#aws_config.aws_region,
 
-    Props = [{<<"text">>, Text}
-            ,{<<"voice">>, VoiceId}
-            ,{<<"format">>, Format}
-            ,{<<"action">>, <<"convert">>}
-            ,{<<"apikey">>, ?TTS_API_KEY}
-            ,{<<"speed">>, kapps_config:get_integer(?MOD_CONFIG_CAT, <<"tts_speed">>, 0)}
-            ,{<<"startpadding">>, kapps_config:get_integer(?MOD_CONFIG_CAT, <<"tts_start_padding">>, 1)}
-            ,{<<"endpadding">>, kapps_config:get_integer(?MOD_CONFIG_CAT, <<"tts_end_padding">>, 0)}
+    Props = [
+                 {<<"OutputFormat">>, Format}
+                ,{<<"SampleRate">>, kapps_config:get_integer(?MOD_CONFIG_CAT, <<"tts_speed">>, 16000)}
+                ,{<<"SpeechMarkTypes">>, <<"[\"sentence\", \"word]\"]">>}
+                ,{<<"Text">>, Text}
+                ,{<<"TextType">>, <<"text">>}
+                ,{<<"VoiceId">>, VoiceId}
             ],
+
     Headers = [{"Content-Type", "application/json; charset=UTF-8"}],
     Body = kz_json:encode(kz_json:from_list(Props)),
 
