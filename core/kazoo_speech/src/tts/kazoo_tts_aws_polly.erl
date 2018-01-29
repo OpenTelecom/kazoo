@@ -2,13 +2,15 @@
 
 -behaviour(gen_tts_provider).
 
--export([create/4
+-export([
+      create/4
     , set_api_key/1
     , check_aws_config/0
     , get_aws_config/0
     , check_voice/0
     , set_aws_key_id/1
-    , set_aws_secret_key/1]).
+    , set_aws_secret_key/1
+]).
 
 -include("kazoo_speech.hrl").
 -include_lib("erlcloud/include/erlcloud_aws.hrl").
@@ -21,7 +23,8 @@
 %%            "tts_aws_secret_key": "RhPmUuGCVyyW6a3bwHU5lvFsfzTo1AWVq6YGqCcr",
 %%            "tts_speed": 22050,
 %%            "tts_media_format": "mp3",
-%%            "tts_provider": "aws_polly"
+%%            "tts_provider": "aws_polly",
+%%            "tts_api_key": "blank_aws_api_key"
 %%        },
 %%        "id": "speech"
 %%    }
@@ -76,38 +79,35 @@ create(Text, Voice, Format, Options) ->
 make_request(Text, VoiceId, Format, Options) ->
     BaseUrl = kapps_config:get_string(?MOD_CONFIG_CAT, <<"tts_aws_polly_url">>),
 
-    io:format("~nBaseUrl=~p~nText=~p~nVoiceId=~p~nFormat=~p~nOptions=~p~n",[BaseUrl,Text,VoiceId,Format,Options]),
-%%    BaseUrl = ?AWS_POLLY_VOICES_URL,
-%%    Format = kazoo_tts:default_media_format()
-
-%%    {Service, Config} = get_aws_config(),
-%%    Method = ?AWS_POLLY_SPEECH_METHOD,
-%%    {'ok', {ProtocolAtom,_UserInfo, Host, Port, Path, _Query}} = http_uri:parse(binary_to_list(?AWS_POLLY_VOICES_URL)),
-%%    Protocol = atom_to_list(ProtocolAtom),
-%%    Params = maps:to_list(?AWS_POLLY_VOICES_LANGUAGE_CODE_MAP),
-%%    Region = Config#aws_config.aws_region,
+    {Service, Config} = get_aws_config(),
+    Method = ?AWS_POLLY_SPEECH_METHOD,
+    {'ok', {_ProtocolAtom,_UserInfo, Host, _Port, Path, _Query}} = http_uri:parse(BaseUrl),
+    Region = Config#aws_config.aws_region,
 
     Props = [
                  {<<"OutputFormat">>, Format}
-                ,{<<"SampleRate">>, kapps_config:get_integer(?MOD_CONFIG_CAT, <<"tts_speed">>, 16000)}
-                ,{<<"SpeechMarkTypes">>, <<"[\"sentence\", \"word]\"]">>}
+                ,{<<"SampleRate">>, erlang:integer_to_binary(kapps_config:get_integer(?MOD_CONFIG_CAT, <<"tts_speed">>, 16000))}
                 ,{<<"Text">>, Text}
                 ,{<<"TextType">>, <<"text">>}
                 ,{<<"VoiceId">>, VoiceId}
             ],
+    Payload = kz_json:encode(kz_json:from_list(Props)),
 
-    Headers = [{"Content-Type", "application/json; charset=UTF-8"}],
-    Body = kz_json:encode(kz_json:from_list(Props)),
-
-    lager:debug("sending TTS request to ~s", [BaseUrl]),
+    Headers = [
+        {"Content-Type", "application/json; charset=UTF-8"},
+        {"Host", Host},
+        {"Content-Length", erlang:integer_to_list(string:len(binary_to_list(Payload)))}
+    ],
 
     HTTPOptions = props:delete('receiver', Options),
+    SignedHeaders = erlcloud_aws:sign_v4(Method, Path, Config, Headers, Payload, Region, Service, HTTPOptions),
+
     case props:get_value('receiver', Options) of
         Pid when is_pid(Pid) ->
-            Response = kz_http:async_req(Pid, 'post', BaseUrl, Headers, Body, HTTPOptions),
+            Response = kz_http:async_req(Pid, 'post', BaseUrl, SignedHeaders, Payload, HTTPOptions),
             create_response(Response);
         _ ->
-            Response = kz_http:post(BaseUrl, Headers, Body, HTTPOptions),
+            Response = kz_http:post(BaseUrl, SignedHeaders, Payload, HTTPOptions),
             create_response(Response)
     end.
 
@@ -135,7 +135,6 @@ create_response({'ok', _Code, RespHeaders, Content}) ->
 
 -spec get_aws_config() -> {string(),aws_config()}.
 get_aws_config() ->
-%%    Uri = kapps_config:get_string(?MOD_CONFIG_CAT, <<"tts_aws_polly_url">>),
     {_ok, {_Protocol,_UserInfo, Host, _Port, _Path, _Query}} = http_uri:parse(binary_to_list(?AWS_POLLY_VOICES_URL)),
     [Service |[ Region | _ ]] = re:split(Host, "[.]",[{return,list}]),
     {
@@ -174,15 +173,3 @@ check_voice() ->
     {error, Reason} ->
         {error, Reason}
     end.
-
-
-%%-spec get_lang_pair() -> map().
-%%get_lang_pair() ->
-%%  Map = ?AWS_POLLY_VOICES_LANGUAGE_CODE_MAP,
-%%  [Key|_Other] = maps:keys(Map),
-%%  Value = maps:get(Key,Map),
-%%  io:format("Key=~p, Value=~p ~n",[Key,Value]).
-
-
-
-
