@@ -148,9 +148,10 @@ create(Text, Voice, Format, Options) ->
 
 -spec make_request(kz_term:ne_binary(), kz_term:ne_binary(), kz_term:ne_binary(), kz_term:proplist()) -> create_resp().
 make_request(Text, VoiceId, Format, Options) ->
-    BaseUrl = kapps_config:get_string(?MOD_CONFIG_CAT, <<"tts_aws_polly_url">>),
+    BaseUrl = kapps_config:get_string(?MOD_CONFIG_CAT, <<"tts_aws_polly_url">>, <<"https://polly.eu-west-2.amazonaws.com/v1/speech">>),
     case http_uri:parse(BaseUrl) of
         {'ok', {_ProtocolAtom,_UserInfo, Host, _Port, Path, _Query}} ->
+            io:format("Text=~p~nVoiceId=~p~nFormat=~p~nOptions=~p~nBaseUrl=~p~nHost=~p~nPath=~p~n",[Text, VoiceId, Format, Options, BaseUrl, Host, Path]),
             make_request(Text, VoiceId, Format, Options, BaseUrl, Host, Path);
         _ -> {'error', 'invalid_aws_service_url'}
     end.
@@ -161,7 +162,7 @@ make_request(Text, VoiceId, Format, Options, BaseUrl, Host, Path) ->
 
     Props = [
                  {<<"OutputFormat">>, Format}
-                ,{<<"SampleRate">>, erlang:integer_to_binary(kapps_config:get_integer(?MOD_CONFIG_CAT, <<"tts_speed">>, 16000))}
+                ,{<<"SampleRate">>, erlang:integer_to_binary(kapps_config:get_integer(?MOD_CONFIG_CAT, <<"tts_speed">>, 22050))}
                 ,{<<"Text">>, Text}
                 ,{<<"TextType">>, <<"text">>}
                 ,{<<"VoiceId">>, VoiceId}
@@ -175,6 +176,11 @@ make_request(Text, VoiceId, Format, Options, BaseUrl, Host, Path) ->
     ],
 
     HTTPOptions = props:delete('receiver', Options),
+
+    io:format("Method=~p~nPath=~p~nConfig=~p~nHeaders=~p~nPayload=~p~nRegion=~p~nService=~p~nHTTPOptions=~p~n",
+        [Method, Path, Config, Headers, Payload, Region, Service, HTTPOptions]),
+
+
     SignedHeaders = erlcloud_aws:sign_v4(Method, Path, Config, Headers, Payload, Region, Service, HTTPOptions),
 
     case props:get_value('receiver', Options) of

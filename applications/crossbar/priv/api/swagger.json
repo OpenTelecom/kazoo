@@ -22432,7 +22432,60 @@
                                 "female/ru-RU/Viktoria",
                                 "male/ru-RU/Alexander",
                                 "female/ru-RU/Maria",
-                                "female/ru-RU/Lidia"
+                                "female/ru-RU/Lidia",
+                                "female/en-US/Ivy",
+                                "female/en-US/Joanna",
+                                "male/en-US/Joey",
+                                "male/en-US/Justin",
+                                "female/en-US/Kendra",
+                                "female/en-US/Kimberly",
+                                "male/en-US/Matthew",
+                                "female/en-US/Salli",
+                                "male/en-CA/Nicole",
+                                "female/en-AU/Nicole",
+                                "male/en-AU/Russell",
+                                "female/en-GB/Amy",
+                                "male/en-GB/Brian",
+                                "female/en-GB/Emma",
+                                "female/en-IN/Aditi",
+                                "female/en-IN/Raveena",
+                                "male/en-GB-WLS/Geraint",
+                                "female/es-US/Penelope",
+                                "male/es-US/Miguel",
+                                "female/ja-JP/Mizuki",
+                                "male/ja-JP/Takumi",
+                                "female/ko-KR/Seoyeon",
+                                "female/da-DK/Naja",
+                                "male/da-DK/Mads",
+                                "female/de-DE/Marlene",
+                                "male/de-DE/Hans",
+                                "female/de-DE/Vicki",
+                                "female/es-ES/Conchita",
+                                "male/es-ES/Enrique",
+                                "female/fr-CA/Chantal",
+                                "female/fr-FR/Celine",
+                                "male/fr-FR/Mathieu",
+                                "female/it-IT/Carla",
+                                "male/it-IT/Giorgio",
+                                "female/nb-NO/Liv",
+                                "female/nl-NL/Lotte",
+                                "male/nl-NL/Ruben",
+                                "female/pl-PL/Ewa",
+                                "female/pl-PL/Maja",
+                                "male/pl-PL/Jacek",
+                                "male/pl-PL/Jan",
+                                "female/pt-BR/Vitoria",
+                                "male/pt-BR/Ricardo",
+                                "female/pt-PT/Ines",
+                                "male/pt-PT/Cristiano",
+                                "female/ru-RU/Tatyana",
+                                "male/ru-RU/Maxim",
+                                "female/sv-SE/Astrid",
+                                "female/tr-TR/Filiz",
+                                "female/is-IS/Dora",
+                                "male/is-IS/Karl",
+                                "female/ro-RO/Carmen",
+                                "female/cy-GB/Gwyneth"
                             ],
                             "type": "string"
                         }
@@ -30365,6 +30418,21 @@
                     "description": "speech tts args encode",
                     "type": "string"
                 },
+                "tts_aws_key_id": {
+                    "default": "",
+                    "description": "aws polly api key id",
+                    "type": "string"
+                },
+                "tts_aws_polly_url": {
+                    "default": "https://polly.eu-west-2.amazonaws.com/v1/speech",
+                    "description": "speech TTS URL for AWS Polly provider",
+                    "type": "string"
+                },
+                "tts_aws_secret_key": {
+                    "default": "",
+                    "description": "aws secret key id",
+                    "type": "string"
+                },
                 "tts_cache": {
                     "default": 3600000,
                     "description": "How long, in milliseconds, to cache TTS media files",
@@ -30378,6 +30446,11 @@
                 "tts_language": {
                     "default": "en-us",
                     "description": "speech tts language",
+                    "type": "string"
+                },
+                "tts_media_format": {
+                    "default": "wav",
+                    "description": "output tts media format",
                     "type": "string"
                 },
                 "tts_provider": {

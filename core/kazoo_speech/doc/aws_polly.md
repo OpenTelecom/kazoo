@@ -19,7 +19,7 @@
 ```
 In configuration section you must specify AWS api keys as described in AWS user summary of your account (in the tab "Security credentials" -> "Access keys"). More information in AWS docs [Understanding and Getting Your Security Credentials](https://docs.aws.amazon.com/general/latest/gr/aws-sec-cred-types.html)
 
-
+Additionl information about [AWS SynthesizeSpeech api](https://docs.aws.amazon.com/polly/latest/dg/API_SynthesizeSpeech.html).
 
 
 ## Available voices
