@@ -6,7 +6,6 @@
       create/4
     , set_api_key/1, set_aws_key_id/1 , set_aws_secret_key/1
     , get_aws_config/0
-    , check_aws_config/0
     , check_voice/0
 ]).
 
@@ -151,7 +150,6 @@ make_request(Text, VoiceId, Format, Options) ->
     BaseUrl = kapps_config:get_string(?MOD_CONFIG_CAT, <<"tts_aws_polly_url">>, <<"https://polly.eu-west-2.amazonaws.com/v1/speech">>),
     case http_uri:parse(BaseUrl) of
         {'ok', {_ProtocolAtom,_UserInfo, Host, _Port, Path, _Query}} ->
-            io:format("Text=~p~nVoiceId=~p~nFormat=~p~nOptions=~p~nBaseUrl=~p~nHost=~p~nPath=~p~n",[Text, VoiceId, Format, Options, BaseUrl, Host, Path]),
             make_request(Text, VoiceId, Format, Options, BaseUrl, Host, Path);
         _ -> {'error', 'invalid_aws_service_url'}
     end.
@@ -176,10 +174,6 @@ make_request(Text, VoiceId, Format, Options, BaseUrl, Host, Path) ->
     ],
 
     HTTPOptions = props:delete('receiver', Options),
-
-    io:format("Method=~p~nPath=~p~nConfig=~p~nHeaders=~p~nPayload=~p~nRegion=~p~nService=~p~nHTTPOptions=~p~n",
-        [Method, Path, Config, Headers, Payload, Region, Service, HTTPOptions]),
-
 
     SignedHeaders = erlcloud_aws:sign_v4(Method, Path, Config, Headers, Payload, Region, Service, HTTPOptions),
 
@@ -212,8 +206,6 @@ create_response({'ok', _Code, RespHeaders, Content}) ->
     _ = [lager:debug("hdr: ~p", [H]) || H <- RespHeaders],
     {'error', 'tts_provider_failure', kz_json:get_value(<<"message">>, kz_json:decode(Content))}.
 
-
-
 -spec get_aws_config() -> {string(),aws_config()}.
 get_aws_config() ->
     {_ok, {_Protocol,_UserInfo, Host, _Port, _Path, _Query}} = http_uri:parse(binary_to_list(?AWS_POLLY_VOICES_URL)),
@@ -228,16 +220,7 @@ get_aws_config() ->
         http_client = 'httpc'}
     }.
 
--spec check_aws_config() -> 'ok'.
-check_aws_config() ->
-    {Service, Config} = get_aws_config(),
-    io:format("service=~p~n",[Service]),
-    io:format("~p=~p~n",['access_key_id', Config#aws_config.access_key_id]),
-    io:format("~p=~p~n",['secret_access_key', Config#aws_config.secret_access_key]),
-    io:format("~p=~p~n",['aws_region', Config#aws_config.aws_region]),
-    'ok'.
-
--spec check_voice() -> any().
+-spec check_voice() -> {atom(),_}.
 check_voice() ->
     {Service, Config} = get_aws_config(),
     Method = ?AWS_POLLY_VOICES_METHOD,
