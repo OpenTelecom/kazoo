@@ -90,6 +90,8 @@
         ,<<"sip_auth_response">>
         ,<<"sip_auth_uri">>
         ,<<"sip_call_id">>
+        ,<<"sip_from_host">>
+        ,<<"sip_from_user">>
         ,<<"sip_request_host">>
         ,<<"sip_to_host">>
         ,<<"sip_user_agent">>
@@ -149,7 +151,6 @@
         ,<<"variable_loopback_bowout">>
         ,<<"variable_loopback_bowout_on_execute">>
         ,<<"variable_loopback_leg">>
-        ,<<"variable_media_group_id">>
         ,<<"variable_originate_disposition">>
         ,<<"variable_origination_callee_id_name">>
         ,<<"variable_origination_callee_id_number">>
@@ -169,6 +170,7 @@
         ,<<"variable_silence_hits_exhausted">>
         ,<<"variable_sip_auth_realm">>
         ,<<"variable_sip_call_id">>
+        ,<<"variable_sip_from_host">>
         ,<<"variable_sip_from_tag">>
         ,<<"variable_sip_from_uri">>
         ,<<"variable_sip_from_user">>

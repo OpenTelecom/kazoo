@@ -1,13 +1,9 @@
-%%%-------------------------------------------------------------------
-%%% @copyright (C) 2018, 2600Hz
-%%% @doc
-%%%
-%%% Common functions for the provisioner modules
-%%%
+%%%-----------------------------------------------------------------------------
+%%% @copyright (C) 2010-2018, 2600Hz
+%%% @doc Common functions for the provisioner modules
+%%% @author Karl Anderson
 %%% @end
-%%% @contributors
-%%%   Karl Anderson
-%%%-------------------------------------------------------------------
+%%%-----------------------------------------------------------------------------
 -module(provisioner_contact_list).
 
 -export([build/1]).
@@ -71,7 +67,7 @@ get_extension_contacts(AccountDb) ->
 
 get_contact_list_includes(AccountDb) ->
     Default = kapps_config:get_jsons(<<"crossbar.contact_list">>, <<"default_includes">>, []),
-    case kz_account:fetch(AccountDb) of
+    case kzd_accounts:fetch(AccountDb) of
         {'ok', JObj} ->
             kz_json:get_value([<<"contact_list">>, <<"includes">>], JObj, Default);
         {'error', _} ->

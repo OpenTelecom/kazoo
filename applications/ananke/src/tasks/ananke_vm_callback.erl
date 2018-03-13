@@ -1,11 +1,9 @@
-%%%-------------------------------------------------------------------
+%%%-----------------------------------------------------------------------------
 %%% @copyright (C) 2015-2018, 2600Hz
 %%% @doc
-%%%
+%%% @author SIPLABS, LLC (Ilya Ashchepkov)
 %%% @end
-%%% @contributors
-%%%     SIPLABS, LLC (Ilya Ashchepkov)
-%%%-------------------------------------------------------------------
+%%%-----------------------------------------------------------------------------
 -module(ananke_vm_callback).
 
 -export([init/0
@@ -66,7 +64,7 @@ handle_req(JObj, Props) ->
         UserId ->
             lager:debug("voicemail owner is ~p", [UserId]),
             {'ok', UserJObj} = kz_datamgr:open_cache_doc(AccountDb, UserId),
-            {'ok', AccountJObj} = kz_account:fetch(AccountId),
+            {'ok', AccountJObj} = kzd_accounts:fetch(AccountId),
 
             OptionsPath = [<<"notify">>, <<"callback">>],
             VMBoxNotifyJObj = kz_json:get_value(OptionsPath, VMBoxJObj),

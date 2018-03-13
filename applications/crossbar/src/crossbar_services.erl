@@ -1,11 +1,9 @@
-%%%-------------------------------------------------------------------
+%%%-----------------------------------------------------------------------------
 %%% @copyright (C) 2010-2018, 2600Hz
 %%% @doc
-%%%
+%%% @author Peter Defebvre
 %%% @end
-%%% @contributors
-%%%   Peter Defebvre
-%%%-------------------------------------------------------------------
+%%%-----------------------------------------------------------------------------
 -module(crossbar_services).
 
 -export([maybe_dry_run/2, maybe_dry_run/3
@@ -15,11 +13,10 @@
 -include("crossbar.hrl").
 -include_lib("kazoo_number_manager/include/knm_phone_number.hrl"). %% FEATURE_PORT
 
-%%--------------------------------------------------------------------
-%% @public
+%%------------------------------------------------------------------------------
 %% @doc
 %% @end
-%%--------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -type callback() :: fun(() -> cb_context:context()).
 
 -spec maybe_dry_run(cb_context:context(), callback()) -> cb_context:context().
@@ -70,9 +67,14 @@ handle_dry_run_resp(Context, Callback, Services, RespJObj) ->
     end.
 
 
-%%%===================================================================
+%%%=============================================================================
 %%% Internal functions
-%%%===================================================================
+%%%=============================================================================
+
+%%------------------------------------------------------------------------------
+%% @doc
+%% @end
+%%------------------------------------------------------------------------------
 -spec accepting_charges(cb_context:context(), kz_json:object()) -> kz_transaction:transactions().
 accepting_charges(Context, JObj) ->
     Items = extract_items(kz_json:delete_key(<<"activation_charges">>, JObj)),
@@ -87,11 +89,10 @@ commit_transactions(Context, Transactions, Services, Callback) ->
         'error' -> cb_context:add_system_error('datastore_fault', Context)
     end.
 
-%%--------------------------------------------------------------------
-%% @private
+%%------------------------------------------------------------------------------
 %% @doc
 %% @end
-%%--------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec extract_items(kz_json:object()) -> kz_json:objects().
 extract_items(JObj) ->
     kz_json:foldl(fun extract_items_from_category/3, [], JObj).
@@ -109,12 +110,10 @@ extract_item_from_category(CategoryKey, ItemKey, ItemJObj, Acc) ->
                         ,{<<"item">>, ItemKey}
                         ], ItemJObj)|Acc].
 
-%%--------------------------------------------------------------------
-%% @private
+%%------------------------------------------------------------------------------
 %% @doc
 %% @end
-%%--------------------------------------------------------------------
-
+%%------------------------------------------------------------------------------
 -spec create_transactions(cb_context:context()
                          ,kz_json:object()
                          ,kz_transaction:transactions()) -> kz_transaction:transactions().
@@ -162,16 +161,14 @@ dry_run(Services) ->
     lager:debug("updated services, checking for dry run"),
     kz_services:dry_run(Services).
 
-%%--------------------------------------------------------------------
-%% @private
+%%------------------------------------------------------------------------------
 %% @doc
 %% @end
-%%--------------------------------------------------------------------
-
+%%------------------------------------------------------------------------------
 -spec calc_service_updates(cb_context:context(), kz_term:ne_binary()) ->
                                   kz_services:services() | 'undefined'.
 calc_service_updates(Context, <<"device">>) ->
-    DeviceType = kz_device:device_type(cb_context:doc(Context)),
+    DeviceType = kzd_devices:device_type(cb_context:doc(Context)),
     Services = fetch_service(Context),
     kz_service_devices:reconcile(Services, DeviceType);
 calc_service_updates(Context, <<"user">>) ->
@@ -237,11 +234,10 @@ create_port_number(Number, Features) ->
     PN = knm_phone_number:from_json_with_options(JObj, []),
     knm_phone_number:set_feature(PN, ?FEATURE_PORT, kz_json:new()).
 
-%%--------------------------------------------------------------------
-%% @private
+%%------------------------------------------------------------------------------
 %% @doc
 %% @end
-%%--------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec fetch_service(cb_context:context()) -> kz_services:services().
 fetch_service(Context) ->
     kz_services:fetch(cb_context:account_id(Context)).
@@ -264,7 +260,7 @@ reconcile(Context) ->
 base_audit_log(Context, Services) ->
     AccountId = cb_context:account_id(Context),
     AccountJObj = cb_context:account_doc(Context),
-    Tree = kz_account:tree(AccountJObj) ++ [AccountId],
+    Tree = kzd_accounts:tree(AccountJObj) ++ [AccountId],
 
     lists:foldl(fun base_audit_log_fold/2
                ,kzd_audit_log:new()
@@ -287,7 +283,7 @@ base_audit_log_fold({F, V1, V2}, Acc) -> F(Acc, V1, V2).
 -spec base_audit_account(cb_context:context(), kz_services:services()) ->
                                 kz_json:object().
 base_audit_account(Context, Services) ->
-    AccountName = kz_account:name(cb_context:account_doc(Context)),
+    AccountName = kzd_accounts:name(cb_context:account_doc(Context)),
     Diff = kz_services:diff_quantities(Services),
 
     kz_json:from_list(
@@ -304,11 +300,11 @@ base_auth_user_info(Context) ->
     kz_json:from_list(
       props:filter_empty(
         [{<<"account_id">>, kz_doc:account_id(AccountJObj)}
-        ,{<<"account_name">>, kz_account:name(AccountJObj)}
+        ,{<<"account_name">>, kzd_accounts:name(AccountJObj)}
         ,{<<"created">>, kz_doc:created(AccountJObj)}
-        ,{<<"realm">>, kz_account:realm(AccountJObj)}
-        ,{<<"language">>, kz_account:language(AccountJObj)}
-        ,{<<"timezone">>, kz_account:timezone(AccountJObj)}
+        ,{<<"realm">>, kzd_accounts:realm(AccountJObj)}
+        ,{<<"language">>, kzd_accounts:language(AccountJObj)}
+        ,{<<"timezone">>, kzd_accounts:timezone(AccountJObj)}
         ,{<<"auth_user_id">>, kz_json:get_value(<<"owner_id">>, AuthDoc)}
         ,{<<"original_auth_account_id">>, kz_json:get_value(<<"original_account_id">>, AuthDoc)}
         ,{<<"original_auth_user_id">>, kz_json:get_value(<<"original_owner_id">>, AuthDoc)}

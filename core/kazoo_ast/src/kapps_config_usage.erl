@@ -1,3 +1,9 @@
+%%%-----------------------------------------------------------------------------
+%%% @copyright (C) 2015-2018, 2600Hz
+%%% @doc Generate schema for Account and System configurations.
+%%% @author James Aimonetti
+%%% @end
+%%%-----------------------------------------------------------------------------
 -module(kapps_config_usage).
 
 -export([process_project/0, process_app/1
@@ -217,6 +223,8 @@ config_to_schema(_, 'get_node_value', _Args, Schemas) ->
     Schemas;
 config_to_schema(_, 'get_category', _Args, Schemas) ->
     Schemas;
+config_to_schema(_, 'fetch_category', _Args, Schemas) ->
+    Schemas;
 config_to_schema(Source, F='get_global', [Account, Cat, K], Schemas) ->
     config_to_schema(Source, F, [Account, Cat, K, 'undefined'], Schemas);
 config_to_schema(Source, F='get_global', [_Account, Cat, K, Default], Schemas) ->
@@ -370,7 +378,8 @@ guess_type_by_default(?MOD_FUN_ARGS('kz_privacy', 'anonymous_caller_id_number', 
 guess_type_by_default(?MOD_FUN_ARGS('kz_privacy', 'anonymous_caller_id_name', _Args)) -> <<"string">>;
 guess_type_by_default(?MOD_FUN_ARGS('kz_account', 'type', [])) -> <<"string">>;
 guess_type_by_default(?MOD_FUN_ARGS('kz_term', 'to_integer', _Args)) -> <<"integer">>;
-guess_type_by_default(?MOD_FUN_ARGS('kz_binary', 'rand_hex', _Args)) -> <<"string">>.
+guess_type_by_default(?MOD_FUN_ARGS('kz_binary', 'rand_hex', _Args)) -> <<"string">>;
+guess_type_by_default(?MOD_FUN_ARGS(_Mod, 'type', [])) -> <<"string">>.
 
 guess_properties(Document, SourceModule, Key=?NE_BINARY, Type, Default) ->
     DescriptionKey = description_key(Document, Key),
@@ -395,7 +404,7 @@ guess_properties(Document, Source, [_Key, ?FIELD_PROPERTIES|_]=Keys, Type, Defau
     JustKeys = [K || K <- Keys, ?FIELD_PROPERTIES =/= K],
     guess_properties(Document, Source, kz_binary:join(JustKeys, $.), Type, Default).
 
-type([undefined]) ->
+type(['undefined']) ->
     [{?FIELD_TYPE, <<"array">>}];
 type({Type, [OrArrayType]}) ->
     [{?FIELD_TYPE, [Type, <<"array">>]}

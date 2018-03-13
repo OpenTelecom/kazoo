@@ -1,11 +1,9 @@
-%%%-------------------------------------------------------------------
-%%% @copyright (C) 2011-2018, 2600Hz INC
-%%% @doc
-%%% Utility functions for AMQP listeners to use to add/remove responders
+%%%-----------------------------------------------------------------------------
+%%% @copyright (C) 2011-2018, 2600Hz
+%%% @doc Utility functions for AMQP listeners to use to add/remove responders.
+%%% @author James Aimonetti
 %%% @end
-%%% @contributors
-%%%   James Aimonetti
-%%%-------------------------------------------------------------------
+%%%-----------------------------------------------------------------------------
 -module(listener_utils).
 
 -export([add_responder/3
@@ -26,7 +24,9 @@
 add_responder(Responders, Responder, Keys) when is_atom(Responder) ->
     add_responder(Responders, {Responder, ?DEFAULT_CALLBACK}, Keys);
 add_responder(Responders, Responder, Keys) ->
-    _ = maybe_init_responder(Responder, is_responder_known(Responders, Responder)),
+    _ = maybe_init_responder(Responder
+                            ,is_responder_known(Responders, Responder)
+                            ),
     case responder(Responder) of
         'undefined' -> Responders;
         ResponderMFA -> update_responders(Responders, ResponderMFA, Keys)
@@ -57,10 +57,14 @@ rm_responder(Responders, Responder, Keys) ->
           )
     ].
 
-%%--------------------------------------------------------------------
-%% Internal functions
-%%--------------------------------------------------------------------
+%%%=============================================================================
+%%% Internal functions
+%%%=============================================================================
 
+%%------------------------------------------------------------------------------
+%% @doc
+%% @end
+%%------------------------------------------------------------------------------
 -spec is_responder_known(responders(), responder_callback()) -> boolean().
 is_responder_known(Responders, {Responder,_}=Callback) ->
     _ = maybe_load_responder(Responder),
@@ -71,14 +75,10 @@ is_responder_known(_Responders, Callback)
 
 -spec maybe_load_responder(module()) -> 'ok'.
 maybe_load_responder(Responder) ->
-    case erlang:module_loaded(Responder) of
-        'true' -> 'ok';
+    case kz_module:ensure_loaded(Responder) of
+        Responder -> 'ok';
         'false' ->
-            case code:ensure_loaded(Responder) of
-                {'module', Responder} -> 'ok';
-                {'error', 'nofile'} ->
-                    error({'error', 'no_responder_module', Responder})
-            end
+            error({'error', 'no_responder_module', Responder})
     end.
 
 -spec maybe_add_mapping(responder(), responders()) -> responders().
@@ -114,9 +114,14 @@ responder(CallbackFun)
     {CallbackFun, Arity};
 responder(_) -> 'undefined'.
 
--spec maybe_init_responder(responder_callback(), boolean()) -> 'ok'.
-maybe_init_responder(_, 'false') -> 'ok';
+-spec maybe_init_responder(responder_callback(), boolean()) -> 'ok' | 'false'.
+maybe_init_responder(_Responder, 'false') -> 'ok';
 maybe_init_responder({Responder, _Fun}, 'true') when is_atom(Responder) ->
+    kz_module:is_exported(Responder, 'init', 0)
+        andalso init_responder(Responder).
+
+-spec init_responder(module()) -> 'ok'.
+init_responder(Responder) ->
     try Responder:init() of
         _Init ->
             lager:debug("responder ~s init: ~p", [Responder, _Init])

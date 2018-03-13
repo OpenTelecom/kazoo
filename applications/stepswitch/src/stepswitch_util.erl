@@ -1,9 +1,8 @@
-%%%-------------------------------------------------------------------
-%%% @copyright (C) 2011-2018, 2600Hz INC
+%%%-----------------------------------------------------------------------------
+%%% @copyright (C) 2011-2018, 2600Hz
 %%% @doc
-%%%
 %%% @end
-%%%-------------------------------------------------------------------
+%%%-----------------------------------------------------------------------------
 -module(stepswitch_util).
 
 -export([get_realm/1]).
@@ -20,12 +19,10 @@
 -include_lib("kazoo_stdlib/include/kazoo_json.hrl").
 -include_lib("kazoo_amqp/include/kapi_offnet_resource.hrl").
 
-%%--------------------------------------------------------------------
-%% @public
+%%------------------------------------------------------------------------------
 %% @doc
-%%
 %% @end
-%%--------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec get_realm(kz_term:api_binary() | kz_json:object()) -> kz_term:api_binary().
 get_realm('undefined') -> 'undefined';
 get_realm(From) when is_binary(From) ->
@@ -44,12 +41,10 @@ get_realm(JObj) ->
             get_realm(kz_json:get_value(<<"From">>, JObj))
     end.
 
-%%--------------------------------------------------------------------
-%% @public
+%%------------------------------------------------------------------------------
 %% @doc
-%%
 %% @end
-%%--------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec get_inbound_destination(kz_json:object()) -> kz_term:ne_binary().
 get_inbound_destination(JObj) ->
     {Number, _} = kapps_util:get_destination(JObj, ?APP_NAME, <<"inbound_user_field">>),
@@ -62,12 +57,10 @@ get_inbound_destination(JObj) ->
 assume_e164(<<$+, _/binary>> = Number) -> Number;
 assume_e164(Number) -> <<$+, Number/binary>>.
 
-%%--------------------------------------------------------------------
-%% @public
+%%------------------------------------------------------------------------------
 %% @doc
-%%
 %% @end
-%%--------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec get_outbound_destination(kapi_offnet_resource:req()) -> kz_term:ne_binary().
 get_outbound_destination(OffnetReq) ->
     Number = kapi_offnet_resource:to_did(OffnetReq),
@@ -76,14 +69,12 @@ get_outbound_destination(OffnetReq) ->
         'true' -> Number
     end.
 
-%%--------------------------------------------------------------------
-%% @public
-%% @doc
-%% if the given number is shorter then a known caller id then try
+%%------------------------------------------------------------------------------
+%% @doc if the given number is shorter then a known caller id then try
 %% to pad the front of the dialed number with values from the
 %% callerid.
 %% @end
-%%--------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec correct_shortdial(kz_term:ne_binary(), kz_term:ne_binary() | kapi_offnet_resource:req()) -> kz_term:api_binary().
 correct_shortdial(<<"+", Number/binary>>, CIDNum) ->
     correct_shortdial(Number, CIDNum);
@@ -307,7 +298,7 @@ get_endpoint_format_from(OffnetReq, CCVs) ->
 -spec route_by() -> atom().
 route_by() ->
     RouteBy = kapps_config:get_ne_binary(?SS_CONFIG_CAT, <<"route_by">>, ?DEFAULT_ROUTE_BY),
-    case kz_util:try_load_module(RouteBy) of
+    case kz_module:ensure_loaded(RouteBy) of
         'false' -> kz_term:to_atom(?DEFAULT_ROUTE_BY);
         Module -> Module
     end.

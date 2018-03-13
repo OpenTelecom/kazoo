@@ -1,10 +1,8 @@
-%%%-------------------------------------------------------------------
+%%%-----------------------------------------------------------------------------
 %%% @copyright (C) 2013-2018, 2600Hz
 %%% @doc
-%%%
 %%% @end
-%%% @contributors
-%%%-------------------------------------------------------------------
+%%%-----------------------------------------------------------------------------
 -module(konami_maintenance).
 
 -export([is_running/0
@@ -190,8 +188,4 @@ builder_modules(F) ->
 
 -spec is_builder_module(atom(), atom()) -> boolean().
 is_builder_module(M, F) ->
-    try M:module_info('exports') of
-        Exports -> props:get_value(F, Exports) =:= 1
-    catch
-        _E:_R -> 'false'
-    end.
+    kz_module:is_exported(M, F, 1).

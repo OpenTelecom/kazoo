@@ -1,11 +1,10 @@
-%%%-------------------------------------------------------------------
-%%% @copyright (C) 2011-2018, 2600Hz INC
+%%%-----------------------------------------------------------------------------
+%%% @copyright (C) 2011-2018, 2600Hz
 %%% @doc
+%%% @author Karl Anderson
+%%% @author James Aimonetti
 %%% @end
-%%% @contributors
-%%%   Karl Anderson
-%%%   James Aimonetti
-%%%-------------------------------------------------------------------
+%%%-----------------------------------------------------------------------------
 -module(kz_attributes).
 
 -export([temporal_rules/1]).
@@ -31,11 +30,10 @@
 
 -type cid() :: {kz_term:api_binary(), kz_term:api_binary()}.
 
-%%-----------------------------------------------------------------------------
-%% @public
+%%------------------------------------------------------------------------------
 %% @doc
 %% @end
-%%-----------------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec temporal_rules(kapps_call:call()) -> kz_json:objects().
 temporal_rules(Call) ->
     AccountDb = kapps_call:account_db(Call),
@@ -46,11 +44,10 @@ temporal_rules(Call) ->
             []
     end.
 
-%%-----------------------------------------------------------------------------
-%% @public
+%%------------------------------------------------------------------------------
 %% @doc
 %% @end
-%%-----------------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 
 -spec groups(kapps_call:call()) -> kz_json:objects().
 groups(Call) ->
@@ -64,11 +61,10 @@ groups(Call, ViewOptions) ->
         {'error', _} -> []
     end.
 
-%%-----------------------------------------------------------------------------
-%% @public
+%%------------------------------------------------------------------------------
 %% @doc
 %% @end
-%%-----------------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec caller_id_type(kapps_call:call()) -> kz_term:ne_binary().
 caller_id_type(Call) ->
     case kapps_call:inception(Call) of
@@ -259,7 +255,7 @@ get_account_external_cid(Call) ->
 
 -spec maybe_get_account_cid(kz_term:ne_binary(), kz_term:ne_binary(), kapps_call:call()) -> cid().
 maybe_get_account_cid(Number, Name, Call) ->
-    case kz_account:fetch(kapps_call:account_id(Call)) of
+    case kzd_accounts:fetch(kapps_call:account_id(Call)) of
         {'error', _} -> maybe_get_assigned_number(Number, Name, Call);
         {'ok', JObj} -> maybe_get_account_external_number(Number, Name, JObj, Call)
     end.
@@ -339,11 +335,10 @@ maybe_get_presence_number(Endpoint, Call) ->
             end
     end.
 
-%%-----------------------------------------------------------------------------
-%% @public
+%%------------------------------------------------------------------------------
 %% @doc
 %% @end
-%%-----------------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec callee_id(kz_term:api_binary() | kz_json:object(), kapps_call:call()) -> cid().
 callee_id(EndpointId, Call) when is_binary(EndpointId) ->
     case kz_endpoint:get(EndpointId, Call) of
@@ -373,11 +368,10 @@ determine_callee_attribute(Call) ->
         'false' -> <<"internal">>
     end.
 
-%%-----------------------------------------------------------------------------
-%% @public
+%%------------------------------------------------------------------------------
 %% @doc
 %% @end
-%%-----------------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 
 -spec moh_attributes(kz_term:ne_binary(), kapps_call:call()) -> kz_term:api_binary().
 moh_attributes(Attribute, Call) ->
@@ -411,11 +405,10 @@ maybe_normalize_moh_attribute(Value, Attribute, _) ->
     lager:info("found music_on_hold ~s: '~p'", [Attribute, Value]),
     Value.
 
-%%-----------------------------------------------------------------------------
-%% @public
+%%------------------------------------------------------------------------------
 %% @doc
 %% @end
-%%-----------------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 
 -spec owner_id(kapps_call:call()) -> kz_term:api_ne_binary().
 owner_id(Call) ->
@@ -462,12 +455,10 @@ owner_ids(ObjectId, Call) ->
             []
     end.
 
-%%--------------------------------------------------------------------
-%% @public
-%% @doc
-%% This function will return the precense id for the endpoint
+%%------------------------------------------------------------------------------
+%% @doc This function will return the precense id for the endpoint
 %% @end
-%%--------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec presence_id(kapps_call:call()) -> kz_term:api_binary().
 presence_id(Call) ->
     presence_id(kapps_call:authorizing_id(Call), Call).
@@ -479,12 +470,12 @@ presence_id(EndpointId, Call) when is_binary(EndpointId) ->
         {'error', _} -> 'undefined'
     end;
 presence_id(Endpoint, Call) ->
-    Username = kz_device:sip_username(Endpoint, kapps_call:request_user(Call)),
+    Username = kzd_devices:sip_username(Endpoint, kapps_call:request_user(Call)),
     presence_id(Endpoint, Call, Username).
 
 -spec presence_id(kz_json:object(), kapps_call:call(), Default) -> kz_term:ne_binary() | Default.
 presence_id(Endpoint, Call, Default) ->
-    PresenceId = kz_device:presence_id(Endpoint, Default),
+    PresenceId = kzd_devices:presence_id(Endpoint, Default),
     case kz_term:is_empty(PresenceId) of
         'true' -> maybe_fix_presence_id_realm(Default, Endpoint, Call);
         'false' -> maybe_fix_presence_id_realm(PresenceId, Endpoint, Call)
@@ -503,11 +494,10 @@ maybe_fix_presence_id_realm(PresenceId, Endpoint, Call) ->
         _Else -> PresenceId
     end.
 
-%%-----------------------------------------------------------------------------
-%% @public
+%%------------------------------------------------------------------------------
 %% @doc
 %% @end
-%%-----------------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 
 -spec owned_by(kz_term:api_binary(), kapps_call:call()) -> kz_term:api_binaries().
 owned_by('undefined', _) -> [];
@@ -569,11 +559,10 @@ owned_by_query(ViewOptions, Call, ViewKey) ->
             []
     end.
 
-%%-----------------------------------------------------------------------------
-%% @public
+%%------------------------------------------------------------------------------
 %% @doc
 %% @end
-%%-----------------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec get_flags(kz_term:ne_binary(), kapps_call:call()) -> kz_term:ne_binaries() | undefined.
 get_flags(ApplicationName, Call) ->
     Routines = [fun maybe_get_endpoint_static_flags/3
@@ -598,14 +587,14 @@ maybe_get_endpoint_static_flags(_, Call, Flags) ->
 -spec get_endpoint_static_flags(kz_term:ne_binaries(), kz_json:object()) ->
                                        kz_term:ne_binaries().
 get_endpoint_static_flags(Flags, Endpoint) ->
-    kz_device:outbound_static_flags(Endpoint) ++ Flags.
+    kzd_devices:outbound_static_flags(Endpoint) ++ Flags.
 
 -spec get_account_static_flags(kz_term:ne_binary(), kapps_call:call(), kz_term:ne_binaries()) ->
                                       kz_term:ne_binaries().
 get_account_static_flags(_, Call, Flags) ->
     AccountId = kapps_call:account_id(Call),
-    case kz_account:fetch(AccountId) of
-        {'ok', AccountJObj} -> kz_device:outbound_static_flags(AccountJObj) ++ Flags;
+    case kzd_accounts:fetch(AccountId) of
+        {'ok', AccountJObj} -> kzd_devices:outbound_static_flags(AccountJObj) ++ Flags;
         {'error', _E} ->
             lager:error("not applying account outbound flags for ~s: ~p", [AccountId, _E]),
             Flags
@@ -632,7 +621,7 @@ maybe_get_endpoint_dynamic_flags(_, Call, Flags) ->
 -spec get_endpoint_dynamic_flags(kapps_call:call(), kz_term:ne_binaries(), kz_json:object()) ->
                                         kz_term:ne_binaries().
 get_endpoint_dynamic_flags(Call, Flags, Endpoint) ->
-    case kz_device:outbound_dynamic_flags(Endpoint) of
+    case kzd_devices:outbound_dynamic_flags(Endpoint) of
         [] -> Flags;
         DynamicFlags -> process_dynamic_flags(DynamicFlags, Flags, Call)
     end.
@@ -641,9 +630,9 @@ get_endpoint_dynamic_flags(Call, Flags, Endpoint) ->
                                        kz_term:ne_binaries().
 get_account_dynamic_flags(_, Call, Flags) ->
     AccountId = kapps_call:account_id(Call),
-    case kz_account:fetch(AccountId) of
+    case kzd_accounts:fetch(AccountId) of
         {'ok', AccountJObj} ->
-            process_dynamic_flags(kz_device:outbound_dynamic_flags(AccountJObj), Flags, Call);
+            process_dynamic_flags(kzd_devices:outbound_dynamic_flags(AccountJObj), Flags, Call);
         {'error', _E} ->
             lager:error("not applying account dynamic flags for ~s: ~p", [AccountId, _E]),
             Flags
@@ -659,11 +648,10 @@ get_config_dynamic_flags(ApplicationName, Call, Flags) ->
                                                        ),
     process_dynamic_flags(DynamicFlags, Flags, Call).
 
-%%-----------------------------------------------------------------------------
-%% @public
+%%------------------------------------------------------------------------------
 %% @doc
 %% @end
-%%-----------------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec process_dynamic_flags(kz_term:ne_binaries(), kapps_call:call()) -> kz_term:ne_binaries().
 process_dynamic_flags(DynamicFlags, Call) ->
     process_dynamic_flags(DynamicFlags, [], Call).
@@ -695,19 +683,12 @@ process_dynamic_flags([DynamicFlag|DynamicFlags], Flags, Call) ->
 
 -spec is_flag_exported(kz_term:ne_binary()) -> boolean().
 is_flag_exported(Flag) ->
-    is_flag_exported(kz_term:to_binary(Flag), kapps_call:module_info('exports')).
+    kz_module:is_exported('kapps_call', kz_term:to_atom(Flag), 1).
 
-is_flag_exported(_, []) -> 'false';
-is_flag_exported(Flag, [{F, 1}|Funs]) ->
-    kz_term:to_binary(F) =:= Flag
-        orelse is_flag_exported(Flag, Funs);
-is_flag_exported(Flag, [_|Funs]) -> is_flag_exported(Flag, Funs).
-
-%%-----------------------------------------------------------------------------
-%% @private
+%%------------------------------------------------------------------------------
 %% @doc
 %% @end
-%%-----------------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec default_cid_number(kz_term:ne_binary()) -> kz_term:ne_binary().
 default_cid_number(AccountId) ->
     kapps_config:get_ne_binary(?CONFIG_CAT

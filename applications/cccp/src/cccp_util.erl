@@ -1,11 +1,9 @@
-%%%-------------------------------------------------------------------
+%%%-----------------------------------------------------------------------------
 %%% @copyright (C) 2012-2018, 2600Hz
 %%% @doc
-%%%
+%%% @author OnNet (Kirill Sysoev github.com/onnet)
 %%% @end
-%%% @contributors
-%%%   OnNet (Kirill Sysoev github.com/onnet)
-%%%-------------------------------------------------------------------
+%%%-----------------------------------------------------------------------------
 -module(cccp_util).
 
 -export([relay_amqp/2
@@ -191,7 +189,7 @@ cccp_allowed_callee(Number) ->
 
 -spec build_request(kz_term:api_binary(), kz_term:api_binary(), kz_term:api_binary(), kz_term:api_binary(), kz_term:api_binary(), kz_term:api_binary(), kz_term:api_binary(), kz_term:ne_binary(),binary(),binary()) -> kz_term:proplist().
 build_request(CallId, ToDID, AuthorizingId, Q, CtrlQ, AccountId, Action, RetainCID, RetainName, RetainNumber) ->
-    Realm = kz_account:fetch_realm(AccountId),
+    Realm = kzd_accounts:fetch_realm(AccountId),
     CCVs = props:filter_undefined([{<<"Account-ID">>, AccountId}
                                   ,{<<"Authorizing-ID">>, AuthorizingId}
                                   ,{<<"Authorizing-Type">>, <<"user">>}
@@ -295,7 +293,7 @@ is_user_channel(Channel, UserId) ->
 
 -spec current_account_channels(kz_term:ne_binary()) -> kz_json:objects().
 current_account_channels(AccountId) ->
-    Req = [{<<"Realm">>, kz_account:fetch_realm(AccountId)}
+    Req = [{<<"Realm">>, kzd_accounts:fetch_realm(AccountId)}
           ,{<<"Usernames">>, []}
           ,{<<"Account-ID">>, AccountId}
           ,{<<"Active-Only">>, 'false'}

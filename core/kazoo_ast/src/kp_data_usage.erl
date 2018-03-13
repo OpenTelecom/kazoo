@@ -1,6 +1,11 @@
+%%%-----------------------------------------------------------------------------
+%%% @copyright (C) 2015-2018, 2600Hz
+%%% @doc Module for parsing Konami Pro actions for Data usage.
+%%% @author James Aimonetti
+%%% @end
+%%%-----------------------------------------------------------------------------
 -module(kp_data_usage).
 
-%% module for parsing konami_pro actions for Data usage
 
 -export([process/0, process/1
         ,to_schema_docs/0, to_schema_doc/1
@@ -32,7 +37,7 @@ to_schema_doc(M) ->
 to_schema_doc(M, Usage) ->
     <<"konami_pro_", Base/binary>> = kz_term:to_binary(M),
     Schema = kz_ast_util:schema_path(<<"metaflows.", Base/binary, ".json">>),
-    kz_ast_util:ensure_file_exists(Schema),
+    _ = kz_ast_util:ensure_file_exists(Schema),
     update_schema(Base, Schema, Usage),
     update_doc(Base, Schema).
 

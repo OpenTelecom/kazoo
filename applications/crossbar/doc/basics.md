@@ -107,6 +107,21 @@ When issuing a PUT or POST, a request body is needed. When submitting a JSON (th
 }
 ```
 
+##### Request Data
+
+When using `PATCH` to edit entities, if you want to remove a field from the entity, set it to `null`:
+
+```json
+{
+    "data": {
+        "update":"this",
+        "exists":null
+    }
+}
+```
+
+This request would set "update" to "this" and would remove "exists" from the entity.
+
 #### Response Envelope
 
 When receiving JSON responses, clients will receive the response in an envelope. The response includes some duplicated data from the HTTP Response headers, since some clients do not have access to those headers.
@@ -273,4 +288,27 @@ curl -v \
     -H "Accept: audio/mpeg" \
     -H "Range: bytes={START_BYTE}-{END_BYTE}" \
     http://{SERVER_URL}:8000/v2/accounts/{ACCOUNT_ID}/vmboxes/{VMBOX_ID}/messages/{MESSAGE_ID}/raw
+```
+
+#### Requesting data in CSV format
+
+In some cases (eg CDR) its possible to request data in CSV format
+You must define the Content-type in the header
+You can define the file name in the request header or URL (Optional)
+
+```shell
+curl -v -X GET \
+    -H "Accept: text/csv" \
+    -H "X-Auth-Token: {AUTH_TOKEN}" \
+    -H "X-File-Name: {FILE_NAME}" \
+    http://{SERVER}:8000/v2/accounts/{ACCOUNT_ID}/cdrs
+```
+
+or
+
+```shell
+curl -v -X GET \
+    -H "Accept: text/csv" \
+    -H "X-Auth-Token: {AUTH_TOKEN}" \
+    http://{SERVER}:8000/v2/accounts/{ACCOUNT_ID}/cdrs?file_name={FILE_NAME}
 ```

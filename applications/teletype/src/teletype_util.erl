@@ -1,11 +1,9 @@
-%%%-------------------------------------------------------------------
-%%% @copyright (C) 2014-2018, 2600Hz INC
+%%%-----------------------------------------------------------------------------
+%%% @copyright (C) 2014-2018, 2600Hz
 %%% @doc
-%%%
+%%% @author James Aimonetti
 %%% @end
-%%% @contributors
-%%%   James Aimonetti
-%%%-------------------------------------------------------------------
+%%%-----------------------------------------------------------------------------
 -module(teletype_util).
 
 -export([send_email/3, send_email/4
@@ -55,8 +53,8 @@
                                   ,{?TEXT_HTML, 2}
                                   ]).
 
--define(NOTICE_ENABLED_BY_DEFAULT,
-        kapps_config:get_is_true(?APP_NAME, <<"notice_enabled_by_default">>, 'true')
+-define(NOTICE_ENABLED_BY_DEFAULT
+       ,kapps_config:get_is_true(?APP_NAME, <<"notice_enabled_by_default">>, 'true')
        ).
 
 -spec send_email(email_map(), kz_term:ne_binary(), rendered_templates()) ->
@@ -72,16 +70,15 @@ send_email(Emails, Subject, RenderedTemplates, Attachments) ->
     From = props:get_value(<<"from">>, Emails),
     Email = {<<"multipart">>
             ,<<"mixed">>
-            ,email_parameters(
-               [{<<"To">>, To}
-               ,{<<"Cc">>, props:get_value(<<"cc">>, Emails)}
-               ,{<<"Bcc">>, props:get_value(<<"bcc">>, Emails)}
-               ]
+            ,email_parameters([{<<"To">>, To}
+                              ,{<<"Cc">>, props:get_value(<<"cc">>, Emails)}
+                              ,{<<"Bcc">>, props:get_value(<<"bcc">>, Emails)}
+                              ]
                              ,[{<<"From">>, From}
                               ,{<<"Reply-To">>, props:get_value(<<"reply_to">>, Emails)}
                               ,{<<"Subject">>, Subject}
                               ]
-              )
+                             )
             ,[{<<"content-type-params">>, [{<<"charset">>, <<"utf-8">>}]}]
             ,[email_body(RenderedTemplates)
               | add_attachments(Attachments)
@@ -170,7 +167,8 @@ relay_email(To, From, {_Type
                       ,Addresses
                       ,_ContentTypeParams
                       ,_Body
-                      }=Email) ->
+                      }=Email
+           ) ->
     try mimemail:encode(Email) of
         Encoded ->
             RelayResult = relay_encoded_email(To, From, Encoded),
@@ -317,8 +315,8 @@ add_rendered_templates_to_email(RenderedTemplates) ->
 add_rendered_templates_to_email([], Acc) -> Acc;
 add_rendered_templates_to_email([{ContentType, Content}|Rs], Acc) ->
     [Type, SubType] = binary:split(ContentType, <<"/">>),
-    CTEncoding = kapps_config:get_ne_binary(?NOTIFY_CONFIG_CAT,
-                                            [<<"mime-encoding">>
+    CTEncoding = kapps_config:get_ne_binary(?NOTIFY_CONFIG_CAT
+                                           ,[<<"mime-encoding">>
                                             ,ContentType
                                             ,<<"content_transfer_encoding">>
                                             ]
@@ -373,14 +371,14 @@ account_params(DataJObj) ->
 -spec find_account_params(kz_term:api_binary()) -> kz_term:proplist().
 find_account_params('undefined') -> [];
 find_account_params(AccountId) ->
-    case kz_account:fetch(AccountId) of
+    case kzd_accounts:fetch(AccountId) of
         {'ok', AccountJObj} ->
             props:filter_undefined(
-              [{<<"name">>, kz_account:name(AccountJObj)}
-              ,{<<"realm">>, kz_account:realm(AccountJObj)}
-              ,{<<"id">>, kz_account:id(AccountJObj)}
-              ,{<<"language">>, kz_account:language(AccountJObj)}
-              ,{<<"timezone">>, kz_account:timezone(AccountJObj)}
+              [{<<"name">>, kzd_accounts:name(AccountJObj)}
+              ,{<<"realm">>, kzd_accounts:realm(AccountJObj)}
+              ,{<<"id">>, kz_doc:id(AccountJObj)}
+              ,{<<"language">>, kzd_accounts:language(AccountJObj)}
+              ,{<<"timezone">>, kzd_accounts:timezone(AccountJObj)}
                | maybe_add_parent_params(AccountId, AccountJObj)
               ]);
         {'error', _E} ->
@@ -390,14 +388,14 @@ find_account_params(AccountId) ->
 
 -spec maybe_add_parent_params(kz_term:ne_binary(), kz_json:object()) -> kz_term:proplist().
 maybe_add_parent_params(AccountId, AccountJObj) ->
-    case kz_account:parent_account_id(AccountJObj) of
+    case kzd_accounts:parent_account_id(AccountJObj) of
         'undefined' -> [];
         AccountId -> [];
         ParentAccountId ->
-            {'ok', ParentAccountJObj} = kz_account:fetch(ParentAccountId),
-            [{<<"parent_name">>, kz_account:name(ParentAccountJObj)}
-            ,{<<"parent_realm">>, kz_account:realm(ParentAccountJObj)}
-            ,{<<"parent_id">>, kz_account:id(ParentAccountJObj)}
+            {'ok', ParentAccountJObj} = kzd_accounts:fetch(ParentAccountId),
+            [{<<"parent_name">>, kzd_accounts:name(ParentAccountJObj)}
+            ,{<<"parent_realm">>, kzd_accounts:realm(ParentAccountJObj)}
+            ,{<<"parent_id">>, kz_doc:id(ParentAccountJObj)}
             ]
     end.
 
@@ -581,10 +579,10 @@ should_handle_notification(_JObj, 'true') ->
 should_handle_notification(JObj, 'false') ->
     Account = kapi_notifications:account_id(JObj),
 
-    Config = kz_account:get_inherited_value(Account
-                                           ,fun kz_account:notification_preference/1
-                                           ,kapps_config:get_ne_binary(?NOTIFY_CONFIG_CAT, <<"notification_app">>, ?APP_NAME)
-                                           ),
+    Config = kzd_accounts:get_inherited_value(Account
+                                             ,fun kzd_accounts:notification_preference/1
+                                             ,kapps_config:get_ne_binary(?NOTIFY_CONFIG_CAT, <<"notification_app">>, ?APP_NAME)
+                                             ),
 
     lager:debug("notification configuration is: ~p", [Config]),
     Config =:= ?APP_NAME.
@@ -636,8 +634,8 @@ is_notice_enabled_default(TemplateKey) ->
 
 -spec get_parent_account_id(kz_term:ne_binary()) -> kz_term:api_binary().
 get_parent_account_id(AccountId) ->
-    case kz_account:fetch(AccountId) of
-        {'ok', JObj} -> kz_account:parent_account_id(JObj);
+    case kzd_accounts:fetch(AccountId) of
+        {'ok', JObj} -> kzd_accounts:parent_account_id(JObj);
         {'error', _E} ->
             lager:error("failed to find parent account for ~s", [AccountId]),
             'undefined'
@@ -905,9 +903,7 @@ build_to_data(DataJObj) ->
 -spec public_proplist(kz_json:path(), kz_json:object()) -> kz_term:proplist().
 public_proplist(Key, JObj) ->
     kz_json:recursive_to_proplist(
-      kz_doc:public_fields(
-        kz_json:get_value(Key, JObj, kz_json:new())
-       )
+      kz_doc:public_fields(kz_json:get_value(Key, JObj, kz_json:new()))
      ).
 
 -spec notification_completed(kz_term:ne_binary()) -> template_response().
@@ -954,7 +950,9 @@ fetch_attachment_from_url(URL) ->
 attachment_from_url_result(Headers, Body) ->
     CT = kz_term:to_binary(props:get_value("content-type", Headers, <<"text/plain">>)),
     Disposition = kz_term:to_binary(props:get_value("content-disposition", Headers, <<>>)),
-    CDs = [ list_to_tuple(binary:split(kz_binary:strip(CD), <<"=">>)) || CD <- binary:split(Disposition, <<";">>)],
+    CDs = [list_to_tuple(binary:split(kz_binary:strip(CD), <<"=">>))
+           || CD <- binary:split(Disposition, <<";">>)
+          ],
     Filename = case props:get_value(<<"filename">>, CDs) of
                    'undefined' -> kz_mime:to_filename(CT);
                    FileDisposition -> FileDisposition

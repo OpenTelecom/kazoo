@@ -1,15 +1,13 @@
-%%%-------------------------------------------------------------------
-%%% @copyright (C) 2010-2018, 2600Hz INC
-%%% @doc
-%%% utility functions for Trunkstore
-%%%
+%%%-----------------------------------------------------------------------------
+%%% @copyright (C) 2010-2018, 2600Hz
+%%% @doc utility functions for Trunkstore
 %%% Some functions make use of the inet_parse module. This is an undocumented
 %%% module, and as such the functions may change or be removed.
 %%%
+%%%
+%%% @author James Aimonetti
 %%% @end
-%%% @contributors
-%%%   James Aimonetti
-%%%-------------------------------------------------------------------
+%%%-----------------------------------------------------------------------------
 -module(ts_util).
 
 -export([find_ip/1
@@ -187,7 +185,8 @@ lookup_user_flags(Name, Realm, AccountId, _) ->
             Options = [{'key', [kz_term:to_lower_binary(Realm)
                                ,kz_term:to_lower_binary(Name)
                                ]
-                       }],
+                       }
+                      ],
             case kz_datamgr:get_results(AccountDb, <<"trunkstore/lookup_user_flags">>, Options) of
                 {'error', _}=E ->
                     lager:info("cache miss for ~s@~s, err: ~p", [Name, Realm, E]),
@@ -200,7 +199,7 @@ lookup_user_flags(Name, Realm, AccountId, _) ->
                     ValJObj = kz_json:get_value(<<"value">>, User),
                     JObj = kz_json:set_value(<<"id">>, kz_doc:id(User), ValJObj),
 
-                    {'ok', AccountJObj} = kz_account:fetch(AccountId),
+                    {'ok', AccountJObj} = kzd_accounts:fetch(AccountId),
                     Restriction = kz_json:get_value(<<"call_restriction">>, AccountJObj, kz_json:new()),
                     Props = [{<<"call_restriction">>, Restriction}
                             ,{<<"account">>
@@ -218,7 +217,7 @@ lookup_user_flags(Name, Realm, AccountId, _) ->
 
 -spec merge_account_attributes(kz_term:ne_binary() | kz_json:object(), kz_json:object()) -> kz_json:object().
 merge_account_attributes(?NE_BINARY=AccountId, JObj) ->
-    case kz_account:fetch(AccountId) of
+    case kzd_accounts:fetch(AccountId) of
         {'ok', Account} -> merge_account_attributes(Account, JObj);
         {'error', _} -> JObj
     end;

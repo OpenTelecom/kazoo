@@ -1,16 +1,14 @@
-%%%-------------------------------------------------------------------
-%%% @copyright (C) 2011-2018, 2600Hz INC
-%%% @doc
-%%% Simple authorization module
-%%%
+%%%-----------------------------------------------------------------------------
+%%% @copyright (C) 2011-2018, 2600Hz
+%%% @doc Simple authorization module
 %%% Authenticates tokens if they are accessing the parent or
 %%% child account only
 %%%
+%%%
+%%% @author Karl Anderson
+%%% @author James Aimonetti
 %%% @end
-%%% @contributors
-%%%   Karl Anderson
-%%%   James Aimonetti
-%%%-------------------------------------------------------------------
+%%%-----------------------------------------------------------------------------
 -module(cb_simple_authz).
 
 -export([init/0
@@ -33,10 +31,14 @@
 %% Endpoints performing their own auth
 -define(IGNORE_MODS, []).
 
-%%%===================================================================
+%%%=============================================================================
 %%% API
-%%%===================================================================
+%%%=============================================================================
 
+%%------------------------------------------------------------------------------
+%% @doc
+%% @end
+%%------------------------------------------------------------------------------
 -spec init() -> 'ok'.
 init() ->
     _ = crossbar_bindings:bind(<<"*.authorize">>, ?MODULE, 'authorize'),
@@ -78,13 +80,11 @@ should_ignore(Context) ->
                       lists:member(Noun, ?IGNORE_MODS)
               end, cb_context:req_nouns(Context)).
 
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Returns true if the requested account id is a descendant or the same
+%%------------------------------------------------------------------------------
+%% @doc Returns true if the requested account id is a descendant or the same
 %% as the account id that has been authorized to make the request.
 %% @end
-%%--------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec account_is_descendant(boolean(), cb_context:context()) -> boolean().
 account_is_descendant('true', _Context) -> 'true';
 account_is_descendant('false', Context) ->
@@ -109,7 +109,7 @@ account_is_descendant('false', Context, AuthAccountId) ->
             %% with a complex key (whose alternate value is useful to use on retrieval)
             lager:debug("checking if account ~s is a descendant of ~s", [ReqAccountId, AuthAccountId]),
             case ReqAccountId =:= AuthAccountId
-                orelse kz_account:fetch(ReqAccountId)
+                orelse kzd_accounts:fetch(ReqAccountId)
             of
                 'true' ->
                     lager:debug("authorizing, requested account is the same as the auth token account"),
@@ -117,7 +117,7 @@ account_is_descendant('false', Context, AuthAccountId) ->
                 %% if the requested account exists, the second component of the key
                 %% is the parent tree, make sure the authorized account id is in that tree
                 {'ok', JObj} ->
-                    Tree = kz_account:tree(JObj),
+                    Tree = kzd_accounts:tree(JObj),
                     case lists:member(AuthAccountId, Tree) of
                         'true' ->
                             lager:debug("authorizing requested account is a descendant of the auth token"),
@@ -133,13 +133,11 @@ account_is_descendant('false', Context, AuthAccountId) ->
             end
     end.
 
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Returns true the request is not for a system admin module (as defined
+%%------------------------------------------------------------------------------
+%% @doc Returns true the request is not for a system admin module (as defined
 %% by the list above) or if it is and the account is a superduper admin.
 %% @end
-%%--------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec allowed_if_sys_admin_mod(boolean(), cb_context:context()) -> boolean().
 allowed_if_sys_admin_mod(IsSysAdmin, Context) ->
     case is_sys_admin_mod(Context) of
@@ -158,12 +156,10 @@ allowed_if_sys_admin_mod(IsSysAdmin, Context) ->
             'false'
     end.
 
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Returns true if the request contains a system admin module.
+%%------------------------------------------------------------------------------
+%% @doc Returns true if the request contains a system admin module.
 %% @end
-%%--------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec is_sys_admin_mod(cb_context:context()) -> boolean().
 is_sys_admin_mod(Context) ->
     Nouns = cb_context:req_nouns(Context),

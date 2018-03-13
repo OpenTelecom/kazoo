@@ -1,8 +1,6 @@
-%%%-------------------------------------------------------------------
-%%% @copyright (C) 2011-2018, 2600Hz INC
-%%% @doc
-%%% Conferences module
-%%%
+%%%-----------------------------------------------------------------------------
+%%% @copyright (C) 2011-2018, 2600Hz
+%%% @doc Conferences module
 %%% Handle client requests for conference documents
 %%%
 %%% URI schema:
@@ -11,12 +9,12 @@
 %%% /v2/accounts/{AccountId}/conferences/{ConferenceID}/participants
 %%% /v2/accounts/{AccountId}/conferences/{ConferenceID}/participants/{ParticipantId}
 %%%
+%%%
+%%% @author Karl Anderson
+%%% @author James Aimonetti
+%%% @author Roman Galeev
 %%% @end
-%%% @contributors
-%%%   Karl Anderson
-%%%   James Aimonetti
-%%%   Roman Galeev
-
+%%%-----------------------------------------------------------------------------
 -module(cb_conferences).
 
 -export([init/0
@@ -34,6 +32,7 @@
 -endif.
 
 -include("crossbar.hrl").
+-include_lib("nklib/include/nklib.hrl").
 
 -define(CB_LIST, <<"conferences/crossbar_listing">>).
 -define(CB_LIST_BY_NUMBER, <<"conference/listing_by_number">>).
@@ -51,10 +50,14 @@
 
 -define(MIN_DIGITS_FOR_DID, 5).
 
-%%%===================================================================
+%%%=============================================================================
 %%% API
-%%%===================================================================
+%%%=============================================================================
 
+%%------------------------------------------------------------------------------
+%% @doc
+%% @end
+%%------------------------------------------------------------------------------
 -spec init() -> 'ok'.
 init() ->
     _ = crossbar_bindings:bind(<<"*.allowed_methods.conferences">>, ?MODULE, 'allowed_methods'),
@@ -66,10 +69,14 @@ init() ->
     _ = crossbar_bindings:bind(<<"*.execute.delete.conferences">>, ?MODULE, 'delete'),
     ok.
 
-%%%===================================================================
+%%%=============================================================================
 %%% REST API Callbacks
-%%%===================================================================
+%%%=============================================================================
 
+%%------------------------------------------------------------------------------
+%% @doc
+%% @end
+%%------------------------------------------------------------------------------
 -spec allowed_methods() -> http_methods().
 allowed_methods() -> [?HTTP_GET, ?HTTP_PUT].
 
@@ -110,9 +117,14 @@ validate(Context, ConferenceId, ?PARTICIPANTS) ->
 validate(Context, ConferenceId, ?PARTICIPANTS, ParticipantId) ->
     validate_participant(cb_context:req_verb(Context), Context, ConferenceId, ParticipantId).
 
-%%%===================================================================
+%%%=============================================================================
 %%% Request object validators
-%%%===================================================================
+%%%=============================================================================
+
+%%------------------------------------------------------------------------------
+%% @doc
+%% @end
+%%------------------------------------------------------------------------------
 -spec validate_conferences(http_method(), cb_context:context()) -> cb_context:context().
 validate_conferences(?HTTP_GET, Context) ->
     Context1 = search_conferences(Context),
@@ -199,10 +211,14 @@ patch(Context, _) ->
 delete(Context, _) ->
     crossbar_doc:delete(Context).
 
-%%%===================================================================
+%%%=============================================================================
 %%% Conference validation helpers
-%%%===================================================================
+%%%=============================================================================
 
+%%------------------------------------------------------------------------------
+%% @doc
+%% @end
+%%------------------------------------------------------------------------------
 -spec maybe_load_conference(path_token(), cb_context:context()) -> cb_context:context().
 maybe_load_conference(ConferenceId, Context) ->
     maybe_build_conference(ConferenceId, load_conference(ConferenceId, Context)).
@@ -292,12 +308,10 @@ add_realtime_fold(Conference, RunningConferences) ->
     Amended = kz_json:merge(Conference, Realtime),
     kz_json:set_value(kz_doc:id(Conference), Amended, RunningConferences).
 
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Create a new conference document with the data provided, if it is valid
+%%------------------------------------------------------------------------------
+%% @doc Create a new conference document with the data provided, if it is valid
 %% @end
-%%--------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec validate_numbers(kz_term:api_binary(), cb_context:context()) -> cb_context:context().
 validate_numbers(Id, Context) ->
     Doc = cb_context:doc(Context),
@@ -324,9 +338,14 @@ invalid_numbers(Context, JObjs) ->
                               ]),
     cb_context:add_validation_error([<<"numbers">>], <<"unique">>, Error, Context).
 
-%%%===================================================================
+%%%=============================================================================
 %%% Conterence Actions
-%%%===================================================================
+%%%=============================================================================
+
+%%------------------------------------------------------------------------------
+%% @doc
+%% @end
+%%------------------------------------------------------------------------------
 -spec handle_conference_action(cb_context:context(), kz_term:ne_binary(), kz_term:ne_binary()) -> cb_context:context().
 handle_conference_action(Context, ConferenceId, <<"lock">>) ->
     kapps_conference_command:lock(conference(ConferenceId)),
@@ -445,6 +464,7 @@ exec_dial_endpoints(Context, ConferenceId, Data, ToDial) ->
               ,{<<"Conference-ID">>, ConferenceId}
               ,{<<"Custom-Application-Vars">>, CAVs}
               ,{<<"Endpoints">>, ToDial}
+              ,{<<"Participant-Flags">>, kz_json:get_list_value(<<"participant_flags">>, Data)}
               ,{<<"Msg-ID">>, cb_context:req_id(Context)}
               ,{<<"Outbound-Call-ID">>, kz_json:get_ne_binary_value(<<"outbound_call_id">>, Data)}
               ,{<<"Target-Call-ID">>, TargetCallId}
@@ -535,12 +555,9 @@ create_call(Context, ConferenceId) ->
 
 -type build_acc() :: {kz_json:objects(), kapps_call:call(), cb_context:context(), pos_integer()}.
 -spec build_endpoint(kz_term:ne_binary(), build_acc()) -> build_acc().
-build_endpoint(<<"sip:", _/binary>>=URI, {Endpoints, Call, Context, Element}) ->
+build_endpoint(<<"sip:", _/binary>>=URI, Acc) ->
     lager:info("building SIP endpoint ~s", [URI]),
-    Endpoint = kz_json:from_list([{<<"Invite-Format">>, <<"route">>}
-                                 ,{<<"Route">>, URI}
-                                 ]),
-    {[Endpoint | Endpoints], Call, Context, Element+1};
+    build_sip_endpoint(URI, Acc);
 build_endpoint(<<_:32/binary>>=EndpointId, {Endpoints, Call, Context, Element}) ->
     case kz_datamgr:open_cache_doc(kapps_call:account_db(Call), EndpointId) of
         {'ok', Endpoint} -> build_endpoint_from_doc(Endpoint, {Endpoints, Call, Context, Element});
@@ -592,6 +609,30 @@ build_number_endpoint(Number, {Endpoints, Call, Context, Element}) ->
 
     lager:info("adding number ~s endpoint", [Number]),
     {[kz_json:from_list(Endpoint) | Endpoints], Call, Context, Element+1}.
+
+-spec build_sip_endpoint(kz_term:ne_binary(), build_acc()) ->
+                                build_acc().
+build_sip_endpoint(URI, {Endpoints, Call, Context, Element}) ->
+    [#uri{user=SipUsername
+         ,domain=SipRealm
+         }
+    ] = nklib_parse_uri:uris(URI),
+
+
+    SIPSettings = kz_json:from_list([{<<"invite_format">>, <<"route">>}
+                                    ,{<<"route">>, URI}
+                                    ,{<<"realm">>, SipRealm}
+                                    ,{<<"username">>, SipUsername}
+                                    ]),
+    Device = kz_json:from_list([{<<"sip">>, SIPSettings}]),
+    Properties = kz_json:from_list([{<<"source">>, kz_term:to_binary(?MODULE)}]),
+    case kz_endpoint:build(Device, Properties, Call) of
+        {'ok', SIPEndpoints} ->
+            {SIPEndpoints ++ Endpoints, Call, Context, Element+1};
+        {'error', _E} ->
+            lager:info("failed to build SIP URI: ~p", [_E]),
+            {Endpoints, Call, add_not_found_error(Context, URI, Element), Element+1}
+    end.
 
 -spec build_endpoint_from_doc(kz_json:object(), build_acc()) -> build_acc().
 build_endpoint_from_doc(Endpoint, Acc) ->
@@ -655,9 +696,14 @@ add_not_found_error(Context, Id, Index) ->
                                    ,Context
                                    ).
 
-%%%===================================================================
+%%%=============================================================================
 %%% Participant Actions
-%%%===================================================================
+%%%=============================================================================
+
+%%------------------------------------------------------------------------------
+%% @doc
+%% @end
+%%------------------------------------------------------------------------------
 -spec handle_participants_action(cb_context:context(), kz_term:ne_binary(), kz_term:ne_binary()) -> cb_context:context().
 handle_participants_action(Context, ConferenceId, Action=?MUTE) ->
     handle_participants_action(Context, ConferenceId, Action,
@@ -842,9 +888,14 @@ find_conference_details(JObjs) ->
         _Else -> kz_json:new()
     end.
 
-%%%===================================================================
+%%%=============================================================================
 %%% Utility functions
-%%%===================================================================
+%%%=============================================================================
+
+%%------------------------------------------------------------------------------
+%% @doc
+%% @end
+%%------------------------------------------------------------------------------
 -spec conference(kz_term:ne_binary()) -> kapps_conference:conference().
 conference(ConferenceId) ->
     kapps_conference:set_id(ConferenceId, kapps_conference:new()).

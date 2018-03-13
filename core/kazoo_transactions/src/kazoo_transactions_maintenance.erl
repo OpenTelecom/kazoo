@@ -1,11 +1,9 @@
-%%%-------------------------------------------------------------------
-%%% @copyright (C) 2014-2018, 2600Hz, INC
+%%%-----------------------------------------------------------------------------
+%%% @copyright (C) 2014-2018, 2600Hz
 %%% @doc
-%%%
+%%% @author Peter Defebvre
 %%% @end
-%%% @contributors
-%%% Peter Defebvre
-%%%-------------------------------------------------------------------
+%%%-----------------------------------------------------------------------------
 -module(kazoo_transactions_maintenance).
 
 -export([balance/1
@@ -15,14 +13,12 @@
 -export([enable_top_up/0]).
 -export([top_up_status/0, top_up_status/1]).
 
--include("include/kazoo_transactions.hrl").
+-include_lib("kazoo_transactions/include/kazoo_transactions.hrl").
 
-%%--------------------------------------------------------------------
-%% @public
+%%------------------------------------------------------------------------------
 %% @doc
-%%
 %% @end
-%%--------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec balance(kz_term:ne_binary()) -> dollars().
 balance(Account) ->
     AccountId = kz_util:format_account_id(Account, 'raw'),
@@ -35,23 +31,19 @@ balance(Account, Year, Month) ->
     {'ok', Balance} = wht_util:previous_balance(AccountId, Year, Month),
     wht_util:units_to_dollars(Balance).
 
-%%--------------------------------------------------------------------
-%% @public
-%% @doc
-%% Enable tauto top up
+%%------------------------------------------------------------------------------
+%% @doc Enable tauto top up
 %% @end
-%%--------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec enable_top_up() -> 'ok'.
 enable_top_up() ->
     kapps_config:set(?TOPUP_CONFIG, <<"enable">>, 'true'),
     io:format("auto top up enabled ~n").
 
-%%--------------------------------------------------------------------
-%% @public
-%% @doc
-%% Disable tauto top up
+%%------------------------------------------------------------------------------
+%% @doc Disable tauto top up
 %% @end
-%%--------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec disable_top_up() -> 'ok'.
 disable_top_up() ->
     kapps_config:set(?TOPUP_CONFIG, <<"enable">>, 'false'),
@@ -89,12 +81,12 @@ current_balance(AccountId) ->
 
 -spec get_topup_thresholds(kz_term:ne_binary()) -> {kz_term:api_integer(), integer() | string(), integer() | string()}.
 get_topup_thresholds(AccountId) ->
-    case kz_account:fetch(AccountId) of
+    case kzd_accounts:fetch(AccountId) of
         {'error', _Reason} ->
             io:format("failed to open account ~p: ~p", [AccountId, _Reason]),
             {'undefined', 'undefined', 'undefined'};
         {'ok', JObj} ->
-            {kz_account:low_balance_threshold(JObj)
+            {kzd_accounts:low_balance_threshold(JObj)
             ,kz_json:get_integer_value([<<"topup">>, <<"amount">>], JObj, "N/A")
             ,kz_json:get_integer_value([<<"topup">>, <<"threshold">>], JObj, "N/A")
             }

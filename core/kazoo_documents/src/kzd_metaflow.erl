@@ -1,53 +1,72 @@
-%% Base document module to use when creating new document modules
+%%%-----------------------------------------------------------------------------
+%%% @copyright (C) 2010-2018, 2600Hz
+%%% @doc
+%%% @end
+%%%-----------------------------------------------------------------------------
 -module(kzd_metaflow).
 
--export([new/0
-        ,binding_digit/1, binding_digit/2
-        ,digit_timeout/1, digit_timeout/2
-        ,listen_on/1, listen_on/2
-        ,numbers/1
-        ,patterns/1
-        ]).
+-export([new/0]).
+-export([children/1, children/2, set_children/2]).
+-export([child/2, child/3, set_child/3]).
+-export([data/1, data/2, set_data/2]).
+-export([module/1, module/2, set_module/2]).
+
 
 -include("kz_documents.hrl").
 
--define(SCHEMA, <<"metaflows">>).
-
 -type doc() :: kz_json:object().
 -export_type([doc/0]).
+
+-define(SCHEMA, <<"metaflow">>).
 
 -spec new() -> doc().
 new() ->
     kz_json_schema:default_object(?SCHEMA).
 
--spec binding_digit(doc()) -> kz_term:ne_binary().
-binding_digit(Doc) ->
-    binding_digit(Doc, <<"*">>).
+-spec children(doc()) -> kz_term:api_object().
+children(Doc) ->
+    children(Doc, 'undefined').
 
--spec binding_digit(doc(), Default) -> kz_term:ne_binary() | Default.
-binding_digit(Doc, Default) ->
-    kz_json:get_ne_binary_value(<<"binding_digit">>, Doc, Default).
+-spec children(doc(), Default) -> kz_json:object() | Default.
+children(Doc, Default) ->
+    kz_json:get_json_value([<<"children">>], Doc, Default).
 
--spec digit_timeout(doc()) -> kz_term:api_integer().
-digit_timeout(Doc) ->
-    digit_timeout(Doc, 0).
+-spec set_children(doc(), kz_json:object()) -> doc().
+set_children(Doc, Children) ->
+    kz_json:set_value([<<"children">>], Children, Doc).
 
--spec digit_timeout(doc(), Default) -> non_neg_integer() | Default.
-digit_timeout(Doc, Default) ->
-    kz_json:get_integer_value(<<"digit_timeout">>, Doc, Default).
+-spec child(doc(), kz_json:key()) -> kz_term:api_object().
+child(Doc, Child) ->
+    child(Doc, Child, 'undefined').
 
--spec listen_on(doc()) -> kz_term:api_ne_binary().
-listen_on(Doc) ->
-    listen_on(Doc, 'undefined').
+-spec child(doc(), kz_json:key(), Default) -> kz_json:object() | Default.
+child(Doc, Child, Default) ->
+    kz_json:get_json_value([<<"children">>, Child], Doc, Default).
 
--spec listen_on(doc(), Default) -> kz_term:ne_binary() | Default.
-listen_on(Doc, Default) ->
-    kz_json:get_ne_binary_value(<<"listen_on">>, Doc, Default).
+-spec set_child(doc(), kz_json:key(), kz_json:object()) -> doc().
+set_child(Doc, Child, Value) ->
+    kz_json:set_value([<<"children">>, Child], Value, Doc).
 
--spec numbers(doc()) -> kz_term:api_object().
-numbers(Doc) ->
-    kz_json:get_json_value(<<"numbers">>, Doc).
+-spec data(doc()) -> kz_json:object().
+data(Doc) ->
+    data(Doc, kz_json:new()).
 
--spec patterns(doc()) -> kz_term:api_object().
-patterns(Doc) ->
-    kz_json:get_json_value(<<"patterns">>, Doc).
+-spec data(doc(), Default) -> kz_json:object() | Default.
+data(Doc, Default) ->
+    kz_json:get_json_value([<<"data">>], Doc, Default).
+
+-spec set_data(doc(), kz_json:object()) -> doc().
+set_data(Doc, Data) ->
+    kz_json:set_value([<<"data">>], Data, Doc).
+
+-spec module(doc()) -> kz_term:api_ne_binary().
+module(Doc) ->
+    module(Doc, 'undefined').
+
+-spec module(doc(), Default) -> kz_term:ne_binary() | Default.
+module(Doc, Default) ->
+    kz_json:get_ne_binary_value([<<"module">>], Doc, Default).
+
+-spec set_module(doc(), kz_term:ne_binary()) -> doc().
+set_module(Doc, Module) ->
+    kz_json:set_value([<<"module">>], Module, Doc).

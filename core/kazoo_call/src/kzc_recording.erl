@@ -1,8 +1,9 @@
-%%-------------------------------------------------------------------
+%%%-----------------------------------------------------------------------------
 %%% @copyright (C) 2012-2018, 2600Hz
-%%% @doc
-%%% Handles starting/stopping a call recording
+%%% @doc Handles starting/stopping a call recording.
 %%%
+%%% Callflow action Data:
+%%% ```
 %%% "data":{
 %%%   "action":["start","stop"] // one of these
 %%%   ,"time_limit":600 // in seconds, how long to record the call
@@ -10,12 +11,12 @@
 %%%   ,"url":"http://server.com/path/to/dump/file" // what URL to PUT the file to
 %%%   ,"record_on_answer": boolean() // whether to delay the start of the recording
 %%% }
-%%% @end
-%%% @contributors
-%%%   James Aimonetti
+%%% '''
 %%%
-%%% Fix KAZOO-3406: Sponsored by Velvetech LLC, implemented by SIPLABS LLC
-%%%-------------------------------------------------------------------
+%%% @author James Aimonetti
+%%% @author Sponsored by Velvetech LLC, Implemented by SIPLABS LLC
+%%% @end
+%%%-----------------------------------------------------------------------------
 -module(kzc_recording).
 
 -behaviour(gen_listener).
@@ -205,34 +206,18 @@ init(Call, Data) ->
                  ,origin = Origin
                  }}.
 
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Handling call messages
-%%
-%% @spec handle_call(Request, From, State) ->
-%%                                   {reply, Reply, State} |
-%%                                   {reply, Reply, State, Timeout} |
-%%                                   {noreply, State} |
-%%                                   {noreply, State, Timeout} |
-%%                                   {stop, Reason, Reply, State} |
-%%                                   {stop, Reason, State}
+%%------------------------------------------------------------------------------
+%% @doc Handling call messages.
 %% @end
-%%--------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec handle_call(any(), kz_term:pid_ref(), state()) -> kz_types:handle_call_ret_state(state()).
 handle_call(_Request, _From, State) ->
     {'reply', {'error', 'not_implemented'}, State}.
 
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Handling cast messages
-%%
-%% @spec handle_cast(Msg, State) -> {noreply, State} |
-%%                                  {noreply, State, Timeout} |
-%%                                  {stop, Reason, State}
+%%------------------------------------------------------------------------------
+%% @doc Handling cast messages.
 %% @end
-%%--------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec handle_cast(any(), state()) -> kz_types:handle_cast_ret_state(state()).
 handle_cast({'record_start', {_, Media}}, #state{media={_, Media}
                                                 ,is_recording='true'
@@ -371,64 +356,51 @@ handle_cast(_Msg, State) ->
     lager:debug("unhandled cast: ~p", [_Msg]),
     {'noreply', State}.
 
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Handling all non call/cast messages
-%%
-%% @spec handle_info(Info, State) -> {noreply, State} |
-%%                                   {noreply, State, Timeout} |
-%%                                   {stop, Reason, State}
+%%------------------------------------------------------------------------------
+%% @doc Handling all non call/cast messages.
 %% @end
-%%--------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec handle_info(any(), state()) -> kz_types:handle_info_ret_state(state()).
 handle_info(_Info, State) ->
     lager:debug("unhandled message: ~p", [_Info]),
     {'noreply', State}.
 
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Allows listener to pass options to handlers
-%%
-%% @spec handle_event(JObj, State) -> {reply, Options}
+%%------------------------------------------------------------------------------
+%% @doc Allows listener to pass options to handlers.
 %% @end
-%%--------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec handle_event(kz_json:object(), kz_term:proplist()) -> gen_listener:handle_event_return().
 handle_event(_JObj, _State) ->
     {'reply', []}.
 
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% This function is called by a gen_server when it is about to
-%% terminate. It should be the opposite of Module:init/1 and do any
-%% necessary cleaning up. When it returns, the gen_server terminates
+%%------------------------------------------------------------------------------
+%% @doc This function is called by a `gen_server' when it is about to
+%% terminate. It should be the opposite of `Module:init/1' and do any
+%% necessary cleaning up. When it returns, the `gen_server' terminates
 %% with Reason. The return value is ignored.
 %%
-%% @spec terminate(Reason, State) -> void()
 %% @end
-%%--------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec terminate(any(), state()) -> 'ok'.
 terminate(_Reason, _State) ->
     lager:debug("listener terminating: ~p", [_Reason]).
 
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Convert process state when code is changed
-%%
-%% @spec code_change(OldVsn, State, Extra) -> {ok, NewState}
+%%------------------------------------------------------------------------------
+%% @doc Convert process state when code is changed.
 %% @end
-%%--------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec code_change(any(), state(), any()) -> {'ok', state()}.
 code_change(_OldVsn, State, _Extra) ->
     {'ok', State}.
 
-%%%===================================================================
+%%%=============================================================================
 %%% Internal functions
-%%%===================================================================
+%%%=============================================================================
 
+%%------------------------------------------------------------------------------
+%% @doc
+%% @end
+%%------------------------------------------------------------------------------
 -spec get_timelimit(kz_term:api_object() | integer()) -> pos_integer().
 get_timelimit('undefined') ->
     kz_media_util:max_recording_time_limit();
@@ -497,7 +469,7 @@ store_recording_meta(#state{call=Call
                      ]
                     ),
 
-    MediaDoc = kz_doc:update_pvt_parameters(BaseMediaDoc, Db, [{'type', kzd_call_recording:type()}]),
+    MediaDoc = kz_doc:update_pvt_parameters(BaseMediaDoc, Db, [{'type', kzd_call_recordings:type()}]),
     case kazoo_modb:save_doc(Db, MediaDoc, [{'ensure_saved', 'true'}]) of
         {'ok', Doc} -> {'ok', Doc};
         {'error', _}= Err -> Err
@@ -508,7 +480,7 @@ store_recording_meta(#state{call=Call
 maybe_store_recording_meta(#state{doc_db=Db
                                  ,doc_id=DocId
                                  }=State) ->
-    case kz_datamgr:open_cache_doc(Db, {kzd_call_recording:type(), DocId}) of
+    case kz_datamgr:open_cache_doc(Db, {kzd_call_recordings:type(), DocId}) of
         {'ok', Doc} -> {'ok', Doc};
         {'error', _E} ->
             lager:debug("failed to find recording meta ~s in ~s: ~p", [DocId, Db, _E]),
@@ -522,14 +494,14 @@ get_media_name(Name, Ext) ->
         _ -> <<Name/binary, ".", Ext/binary>>
     end.
 
--spec store_url(state(), kzd_call_recording:doc()) -> kz_term:ne_binary().
+-spec store_url(state(), kzd_call_recordings:doc()) -> kz_term:ne_binary().
 store_url(#state{doc_db=Db
                 ,doc_id=MediaId
                 ,media={_,MediaName}
                 ,format=_Ext
                 ,should_store={'true', 'local'}
                 }, _MediaDoc) ->
-    kz_media_url:store(Db, {kzd_call_recording:type(), MediaId}, MediaName, []);
+    kz_media_url:store(Db, {kzd_call_recordings:type(), MediaId}, MediaName, []);
 store_url(#state{doc_db=Db
                 ,doc_id=MediaId
                 ,media={_,MediaName}
@@ -547,7 +519,7 @@ store_url(#state{doc_db=Db
                ,att_handler => {AttHandler, HandlerOpts}
                },
     Options = [{'plan_override', Handler}],
-    kz_media_url:store(Db, {kzd_call_recording:type(), MediaId}, MediaName, Options).
+    kz_media_url:store(Db, {kzd_call_recordings:type(), MediaId}, MediaName, Options).
 
 -spec handler_fields(kz_term:ne_binary(), state()) ->
                             kz_att_util:format_fields().

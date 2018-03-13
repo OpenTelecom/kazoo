@@ -1,12 +1,10 @@
-%%%-------------------------------------------------------------------
-%%% @copyright (C) 2011-2018, 2600Hz INC
+%%%-----------------------------------------------------------------------------
+%%% @copyright (C) 2011-2018, 2600Hz
 %%% @doc
-%%%
+%%% @author Karl Anderson
+%%% @author James Aimonetti
 %%% @end
-%%% @contributors
-%%%   Karl Anderson
-%%%   James Aimonetti
-%%%-------------------------------------------------------------------
+%%%-----------------------------------------------------------------------------
 -module(cf_park).
 
 -behaviour(gen_cf_action).
@@ -37,13 +35,11 @@
 -define(PARK_DELAY_CHECK_TIME, kapps_config:get_integer(?MOD_CONFIG_CAT, ?PARK_DELAY_CHECK_TIME_KEY, ?MILLISECONDS_IN_SECOND * 3)).
 -define(PARKING_APP_NAME, <<"park">>).
 
-%%--------------------------------------------------------------------
-%% @public
-%% @doc
-%% Entry point for this module sends an arbitrary response back to the
+%%------------------------------------------------------------------------------
+%% @doc Entry point for this module sends an arbitrary response back to the
 %% call originator.
 %% @end
-%%--------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec update_presence(kz_term:ne_binary(), kz_term:ne_binary(), kz_term:ne_binary()) -> 'ok'.
 update_presence(SlotNumber, _PresenceId, AccountDb) ->
     case get_slot(SlotNumber, AccountDb) of
@@ -51,13 +47,11 @@ update_presence(SlotNumber, _PresenceId, AccountDb) ->
         _ -> 'ok'
     end.
 
-%%--------------------------------------------------------------------
-%% @public
-%% @doc
-%% Entry point for this module sends an arbitrary response back to the
+%%------------------------------------------------------------------------------
+%% @doc Entry point for this module sends an arbitrary response back to the
 %% call originator.
 %% @end
-%%--------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec handle(kz_json:object(), kapps_call:call()) -> any().
 handle(Data, Call) ->
     ParkedCalls = get_parked_calls(Call),
@@ -131,12 +125,10 @@ direct_park(SlotNumber, Slot, ParkedCalls, Data, Call) ->
             cf_exe:stop(Call)
     end.
 
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Determine the appropriate action to retrieve a parked call
+%%------------------------------------------------------------------------------
+%% @doc Determine the appropriate action to retrieve a parked call
 %% @end
-%%--------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec retrieve(kz_term:ne_binary(), kapps_call:call()) ->
                       {'ok', 'channel_hungup'} |
                       {'error', 'slot_empty' | 'timeout' | 'failed'}.
@@ -225,12 +217,10 @@ pickup_event(_Call, {<<"call_event">>,<<"CHANNEL_BRIDGE">>}, _Evt) ->
 pickup_event(Call, _Type, _Evt) ->
     wait_for_pickup(Call).
 
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Determine the appropriate action to park the current call scenario
+%%------------------------------------------------------------------------------
+%% @doc Determine the appropriate action to park the current call scenario
 %% @end
-%%--------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec park_call(kz_term:ne_binary(), kz_json:object(), kz_json:object(), kz_term:api_binary(), kz_json:object(), kapps_call:call()) -> 'ok'.
 park_call(SlotNumber, Slot, ParkedCalls, ReferredTo, Data, Call) ->
     lager:info("attempting to park call in slot ~s", [SlotNumber]),
@@ -288,12 +278,10 @@ wait_for_hangup(Call) ->
         'true' -> {'ok', 'channel_hungup'}
     end.
 
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Builds the json object representing the call in the parking slot
+%%------------------------------------------------------------------------------
+%% @doc Builds the json object representing the call in the parking slot
 %% @end
-%%--------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec create_slot(kz_term:api_binary(), kz_term:ne_binary(), kz_term:ne_binary(), kz_json:object(), boolean(), kapps_call:call()) -> kz_json:object().
 create_slot(ParkerCallId, PresenceType, SlotNumber, Data, Attended, Call) ->
     CallId = cf_exe:callid(Call),
@@ -350,13 +338,11 @@ maybe_custom_presence_id(Data, Call) ->
         PresenceId -> PresenceId
     end.
 
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Returns the provided slot number or the next available if none
+%%------------------------------------------------------------------------------
+%% @doc Returns the provided slot number or the next available if none
 %% was provided
 %% @end
-%%--------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec get_slot_number(kz_json:object(), kz_term:api_binary()) -> kz_term:ne_binary().
 get_slot_number(_, CaptureGroup) when byte_size(CaptureGroup) > 0 ->
     CaptureGroup;
@@ -375,14 +361,12 @@ find_slot_number([A|[B|_]=Slots]) ->
         'true' -> find_slot_number(Slots)
     end.
 
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Save the slot data in the parked calls object at the slot number.
+%%------------------------------------------------------------------------------
+%% @doc Save the slot data in the parked calls object at the slot number.
 %% If, on save, it conflicts then it gets the new instance
 %% and tries again, determining the new slot.
 %% @end
-%%--------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec save_slot(kz_term:ne_binary(), kz_json:object(), kz_json:object(), kapps_call:call()) ->
                        {'ok', kz_json:object()} |
                        {'error', atom()}.
@@ -394,7 +378,6 @@ save_slot(SlotNumber, Slot, ParkedCalls, Call) ->
     of
         'true' ->
             lager:info("slot has parked call '~s' by parker '~s', it is available", [ParkedCallId, ParkerCallId]),
-            _ = kz_datamgr:del_doc(kapps_call:account_db(Call), ?SLOT_DOC_ID(SlotNumber)),
             do_save_slot(SlotNumber, Slot, Call);
         'false' ->
             case kapps_call_command:b_channel_status(ParkedCallId) of
@@ -403,7 +386,6 @@ save_slot(SlotNumber, Slot, ParkedCalls, Call) ->
                     {'error', 'occupied'};
                 _Else ->
                     lager:info("slot is availabled because parked call '~s' no longer exists: ~p", [ParkedCallId, _Else]),
-                    _ = kz_datamgr:del_doc(kapps_call:account_db(Call), ?SLOT_DOC_ID(SlotNumber)),
                     do_save_slot(SlotNumber, Slot, Call)
             end
     end.
@@ -425,14 +407,32 @@ do_save_slot(SlotNumber, Slot, Call) ->
             {'error', 'occupied'}
     end.
 
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% After an attended transfer we need to find the callid that we stored
+-spec slot_doc(kz_term:ne_binary(), kz_json:object(), kapps_call:call()) -> kz_json:object().
+slot_doc(SlotNumber, Slot, Call) ->
+    AccountDb = kapps_call:account_db(Call),
+    Doc = case kz_json:get_json_value(<<"pvt_fields">>, Slot) of
+              'undefined' -> kz_json:set_value(<<"slot">>, Slot, kz_json:new());
+              Pvt -> kz_json:set_value(<<"slot">>, kz_doc:public_fields(Slot), Pvt)
+          end,
+    Options = [{'type', ?PARKED_CALL_DOC_TYPE}
+              ,{'account_id', kapps_call:account_id(Call)}
+              ,{'id', ?SLOT_DOC_ID(SlotNumber)}
+              ],
+    maybe_add_slot_doc_rev(kz_doc:update_pvt_parameters(Doc, AccountDb, Options), AccountDb).
+
+-spec maybe_add_slot_doc_rev(kz_json:object(), kz_term:ne_binary()) -> kz_json:object().
+maybe_add_slot_doc_rev(JObj, AccountDb) ->
+    case kz_datamgr:lookup_doc_rev(AccountDb, kz_doc:id(JObj)) of
+        {'ok', Rev} -> kz_json:set_value(<<"_rev">>, Rev, JObj);
+        {'error', _} -> JObj
+    end.
+
+%%------------------------------------------------------------------------------
+%% @doc After an attended transfer we need to find the callid that we stored
 %% because it was the "C-Leg" of a transfer and now we have the
 %% actuall "A-Leg".  Find the old callid and update it with the new one.
 %% @end
-%%--------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec update_call_id(kz_term:ne_binary(), kapps_call:call()) ->
                             {'ok', kz_term:ne_binary(), kz_json:object()}.
 update_call_id(Replaces, Call) ->
@@ -508,13 +508,11 @@ maybe_get_ringback_id(Call) ->
         _ -> 'undefined'
     end.
 
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Attempts to retrieve the parked calls list from the datastore, if
+%%------------------------------------------------------------------------------
+%% @doc Attempts to retrieve the parked calls list from the datastore, if
 %% the list does not exist then it returns an new empty instance
 %% @end
-%%--------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec get_parked_calls(kapps_call:call() | kz_term:ne_binary()) -> kz_json:object().
 get_parked_calls(?NE_BINARY = AccountDb) ->
     Options = ['include_docs'
@@ -539,6 +537,10 @@ load_parked_call(JObj) ->
     Slot = kz_json:get_json_value(<<"slot">>, Doc),
     {SlotNumber, kz_json:set_value(<<"pvt_fields">>, kz_doc:private_fields(Doc), Slot)}.
 
+%%------------------------------------------------------------------------------
+%% @doc
+%% @end
+%%------------------------------------------------------------------------------
 -spec maybe_cleanup_slot(kz_term:ne_binary(), kapps_call:call(), kz_term:ne_binary()) -> 'ok'.
 maybe_cleanup_slot(SlotNumber, Call, OldCallId) ->
     _ = kz_util:put_callid(OldCallId),
@@ -562,12 +564,10 @@ maybe_cleanup_slot(SlotNumber, CallId, CallId, AccountDb) ->
 maybe_cleanup_slot(_SlotNumber, _OldCallId, _NewCallId, _AccountDb) ->
     lager:info("parking slot ~p call-id changed from ~p to ~p, not cleaning.", [_SlotNumber, _OldCallId, _NewCallId]).
 
-%%--------------------------------------------------------------------
-%% @private
+%%------------------------------------------------------------------------------
 %% @doc
-%%
 %% @end
-%%--------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec cleanup_slot(kz_term:ne_binary(), kz_term:ne_binary(), kz_term:ne_binary()) ->
                           {'ok', kz_json:object()} |
                           {'error', any()}.
@@ -577,15 +577,7 @@ cleanup_slot(SlotNumber, ParkedCallId, AccountDb) ->
             case kz_json:get_ne_binary_value([<<"slot">>, <<"Call-ID">>], JObj) of
                 ParkedCallId ->
                     lager:info("delete parked call ~s in slot ~s", [ParkedCallId, SlotNumber]),
-                    case kz_datamgr:del_doc(AccountDb, JObj) of
-                        {'ok', _}=Ok ->
-                            Slot = kz_json:get_json_value(<<"slot">>, JObj),
-                            update_presence(<<"terminated">>, Slot),
-                            Ok;
-                        {'error', _R}=E ->
-                            lager:info("failed to delete slot ~s : ~p", [SlotNumber, _R]),
-                            E
-                    end;
+                    delete_slot(AccountDb, JObj);
                 _Else ->
                     lager:info("call ~s is parked in slot ~s and we expected ~s", [_Else, SlotNumber, ParkedCallId]),
                     {'error', 'unexpected_callid'}
@@ -595,12 +587,24 @@ cleanup_slot(SlotNumber, ParkedCallId, AccountDb) ->
             E
     end.
 
-%%--------------------------------------------------------------------
-%% @private
+-spec delete_slot(kz_term:ne_binary(), kz_json:object()) ->
+                         {'ok', kz_json:object()} |
+                         {'error', any()}.
+delete_slot(AccountDb, JObj) ->
+    case kz_datamgr:save_doc(AccountDb, kz_json:delete_key(<<"slot">>, JObj)) of
+        {'ok', _}=Ok ->
+            Slot = kz_json:get_json_value(<<"slot">>, JObj),
+            update_presence(<<"terminated">>, Slot),
+            Ok;
+        {'error', _R}=E ->
+            lager:info("failed to delete slot ~s : ~p", [kz_doc:id(JObj), _R]),
+            E
+    end.
+
+%%------------------------------------------------------------------------------
 %% @doc
-%%
 %% @end
-%%--------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec wait_for_pickup(kz_term:ne_binary(), kz_json:object(), kz_json:object(), kapps_call:call()) -> 'ok'.
 wait_for_pickup(SlotNumber, Slot, Data, Call) ->
     RingbackId = kz_json:get_ne_binary_value(<<"Ringback-ID">>, Slot),
@@ -709,12 +713,10 @@ slots_configuration(Data) ->
 slot_configuration(Data, SlotNumber) ->
     kz_json:get_json_value(SlotNumber, slots_configuration(Data), kz_json:new()).
 
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Ringback the device that parked the call
+%%------------------------------------------------------------------------------
+%% @doc Ringback the device that parked the call
 %% @end
-%%--------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec get_endpoint_id(kz_term:api_binary(), kapps_call:call()) -> kz_term:api_binary().
 get_endpoint_id('undefined', _) -> 'undefined';
 get_endpoint_id(Username, Call) ->
@@ -724,12 +726,10 @@ get_endpoint_id(Username, Call) ->
         {'error', _} -> 'undefined'
     end.
 
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Ringback the device that parked the call
+%%------------------------------------------------------------------------------
+%% @doc Ringback the device that parked the call
 %% @end
-%%--------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -type ringback_parker_result() :: 'answered' | 'intercepted' | 'failed' | 'channel_hungup'.
 
 -spec ringback_parker(kz_term:api_binary(), kz_term:ne_binary(), kz_json:object(), kz_json:object(), kapps_call:call()) -> ringback_parker_result().
@@ -893,38 +893,34 @@ update_presence(State, Slot) ->
     lager:info("update presence-id '~s' with state: ~s", [PresenceId, State]),
     kz_amqp_worker:cast(Command, fun kapi_presence:publish_dialog/1).
 
-%%--------------------------------------------------------------------
-%% @private
+%%------------------------------------------------------------------------------
 %% @doc
 %% @end
-%%--------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec publish_parked(kapps_call:call(), kz_term:ne_binary()) -> 'ok'.
 publish_parked(Call, SlotNumber) ->
     publish_event(Call, SlotNumber, <<"PARK_PARKED">>).
 
-%%--------------------------------------------------------------------
-%% @private
+%%------------------------------------------------------------------------------
 %% @doc
 %% @end
-%%--------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec publish_retrieved(kapps_call:call(), kz_term:ne_binary()) -> 'ok'.
 publish_retrieved(Call, SlotNumber) ->
     publish_event(Call, SlotNumber, <<"PARK_RETRIEVED">>).
 
-%%--------------------------------------------------------------------
-%% @private
+%%------------------------------------------------------------------------------
 %% @doc
 %% @end
-%%--------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec publish_abandoned(kapps_call:call(), kz_term:ne_binary()) -> 'ok'.
 publish_abandoned(Call, Slot) ->
     publish_event(Call, Slot, <<"PARK_ABANDONED">>).
 
-%%--------------------------------------------------------------------
-%% @private
+%%------------------------------------------------------------------------------
 %% @doc
 %% @end
-%%--------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec publish_event(kapps_call:call(), kz_term:ne_binary(), kz_term:ne_binary()) -> 'ok'.
 publish_event(Call, SlotNumber, Event) ->
     Cmd = [{<<"Call-ID">>, kapps_call:call_id(Call)}
@@ -939,25 +935,22 @@ publish_event(Call, SlotNumber, Event) ->
           ],
     kapi_call:publish_event(Cmd).
 
--spec slot_doc(kz_term:ne_binary(), kz_json:object(), kapps_call:call()) -> kz_json:object().
-slot_doc(SlotNumber, Slot, Call) ->
-    AccountDb = kapps_call:account_db(Call),
-    Doc = case kz_json:get_json_value(<<"pvt_fields">>, Slot) of
-              'undefined' -> kz_json:set_value(<<"slot">>, Slot, kz_json:new());
-              Pvt -> kz_json:set_value(<<"slot">>, kz_doc:public_fields(Slot), Pvt)
-          end,
-    Options = [{'type', ?PARKED_CALL_DOC_TYPE}
-              ,{'account_id', kapps_call:account_id(Call)}
-              ,{'id', ?SLOT_DOC_ID(SlotNumber)}
-              ],
-    kz_doc:update_pvt_parameters(Doc, AccountDb, Options).
-
 -spec get_slot(kz_term:ne_binary(), kz_term:ne_binary()) -> {'ok', kz_json:object()} | {'error', any()}.
 get_slot(SlotNumber, AccountDb) ->
     DocId = ?SLOT_DOC_ID(SlotNumber),
     case kz_datamgr:open_doc(AccountDb, {?PARKED_CALL_DOC_TYPE, DocId}) of
-        {'ok', JObj} ->
-            Slot = kz_json:get_json_value(<<"slot">>, JObj),
-            {'ok', kz_json:set_value(<<"pvt_fields">>, kz_doc:private_fields(JObj), Slot)};
+        {'ok', JObj} -> maybe_empty_slot(JObj);
         {'error', _} = E -> E
+    end.
+
+-spec maybe_empty_slot(kz_json:object()) -> {'ok', kz_json:object()} | {'error', any()}.
+maybe_empty_slot(JObj) ->
+    case kz_json:get_json_value(<<"slot">>, JObj) of
+        'undefined' -> {'error', 'not_occupied'};
+        Slot ->
+            {'ok', kz_json:set_value(<<"pvt_fields">>
+                                    ,kz_doc:private_fields(JObj)
+                                    ,Slot
+                                    )
+            }
     end.

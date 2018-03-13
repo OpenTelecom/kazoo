@@ -1,11 +1,9 @@
-%%%-------------------------------------------------------------------
-%%% @copyright (C) 2011-2018, 2600Hz INC
-%%% @doc
-%%% Listener for reg_success, and reg_query AMQP requests
+%%%-----------------------------------------------------------------------------
+%%% @copyright (C) 2011-2018, 2600Hz
+%%% @doc Listener for reg_success, and reg_query AMQP requests
+%%% @author James Aimonetti
 %%% @end
-%%% @contributors
-%%%   James Aimonetti
-%%%-------------------------------------------------------------------
+%%%-----------------------------------------------------------------------------
 -module(ecallmgr_registrar).
 -behaviour(gen_listener).
 
@@ -108,6 +106,7 @@
                       ,proxy :: kz_term:api_binary() | '_'
                       ,proxy_ip :: kz_term:api_binary() | '_'
                       ,proxy_port :: kz_term:api_integer() | '_'
+                      ,proxy_proto :: kz_term:api_binary() | '_'
                       ,bridge_uri :: kz_term:api_binary() | '_'
                       ,source_ip :: kz_term:api_binary() | '_'
                       ,source_port :: kz_term:api_binary() | '_'
@@ -116,13 +115,14 @@
 -type registration() :: #registration{}.
 -type registrations() :: [registration()].
 
-%%%===================================================================
+%%%=============================================================================
 %%% API
-%%%===================================================================
+%%%=============================================================================
 
-%%--------------------------------------------------------------------
-%% @doc Starts the server
-%%--------------------------------------------------------------------
+%%------------------------------------------------------------------------------
+%% @doc Starts the server.
+%% @end
+%%------------------------------------------------------------------------------
 -spec start_link() -> kz_types:startlink_ret().
 start_link() ->
     gen_listener:start_link({'local', ?SERVER}
@@ -182,7 +182,7 @@ handle_fs_reg(Node, Props) ->
     kz_amqp_worker:cast(Req, fun kapi_registration:publish_success/1).
 
 -spec lookup_contact(kz_term:ne_binary(), kz_term:ne_binary()) ->
-                            {'ok', kz_term:ne_binary()} |
+                            {'ok', kz_term:ne_binary(), kz_term:proplist()} |
                             {'error', 'not_found'}.
 lookup_contact(<<>>, _Username) -> {'error', 'not_found'};
 lookup_contact(_Realm, <<>>) -> {'error', 'not_found'};
@@ -191,17 +191,35 @@ lookup_contact(<<_/binary>> = Realm, <<_/binary>> = Username) ->
         'undefined' -> fetch_contact(Username, Realm);
         #registration{contact=Contact
                      ,bridge_uri='undefined'
-                     } ->
+                     }=Reg ->
             lager:info("found user ~s@~s contact ~s"
                       ,[Username, Realm, Contact]
                       ),
-            {'ok', Contact};
-        #registration{bridge_uri=Contact} ->
+            {'ok', Contact, contact_vars(to_props(Reg))};
+        #registration{bridge_uri=Contact}=Reg ->
             lager:info("found user ~s@~s bridge uri  ~s"
                       ,[Username, Realm, Contact]
                       ),
-            {'ok', Contact}
+            {'ok', Contact, contact_vars(to_props(Reg))}
     end.
+
+-spec contact_vars(kz_term:proplist()) -> kz_term:proplist().
+contact_vars(Props) ->
+    lists:usort(lists:foldl(fun contact_vars_fold/2, [], Props)).
+
+-spec contact_vars_fold({kz_term:ne_binary(), term()}, kz_term:proplist()) -> kz_term:proplist().
+contact_vars_fold({<<"Proxy-Protocol">>, Proto}, Props) ->
+    case kz_term:to_lower_binary(Proto) of
+        <<"ws", _/binary>> -> [{<<"Media-Webrtc">>, true} | Props];
+        _ -> Props
+    end;
+contact_vars_fold({<<"Original-Contact">>, Contact}, Props) ->
+    [#uri{}=UriContact] = kzsip_uri:uris(Contact),
+    case props:get_value(<<"transport">>, UriContact#uri.opts) of
+        'undefined' -> Props;
+        Transport -> contact_vars_fold({<<"Proxy-Protocol">>, Transport}, Props)
+    end;
+contact_vars_fold(_ , Props) -> Props.
 
 -spec lookup_original_contact(kz_term:ne_binary(), kz_term:ne_binary()) ->
                                      {'ok', kz_term:ne_binary()} |
@@ -348,16 +366,14 @@ flush(Username, Realm) ->
 -spec count() -> non_neg_integer().
 count() -> ets:info(?MODULE, 'size').
 
-%%%===================================================================
+%%%=============================================================================
 %%% gen_listener callbacks
-%%%===================================================================
+%%%=============================================================================
 
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Initializes the server
+%%------------------------------------------------------------------------------
+%% @doc Initializes the server.
 %% @end
-%%--------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec init([]) -> {'ok', state()}.
 init([]) ->
     kz_util:put_callid(?DEFAULT_LOG_SYSTEM_ID),
@@ -368,34 +384,18 @@ init([]) ->
     gproc:reg({'p', 'l', ?REGISTER_SUCCESS_REG}),
     {'ok', #state{}}.
 
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Handling call messages
-%%
-%% @spec handle_call(Request, From, State) ->
-%%                                   {reply, Reply, State} |
-%%                                   {reply, Reply, State, Timeout} |
-%%                                   {noreply, State} |
-%%                                   {noreply, State, Timeout} |
-%%                                   {stop, Reason, Reply, State} |
-%%                                   {stop, Reason, State}
+%%------------------------------------------------------------------------------
+%% @doc Handling call messages.
 %% @end
-%%--------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec handle_call(any(), kz_term:pid_ref(), state()) -> kz_types:handle_call_ret_state(state()).
 handle_call(_Msg, _From, State) ->
     {'noreply', State}.
 
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Handling cast messages
-%%
-%% @spec handle_cast(Msg, State) -> {noreply, State} |
-%%                                  {noreply, State, Timeout} |
-%%                                  {stop, Reason, State}
+%%------------------------------------------------------------------------------
+%% @doc Handling cast messages.
 %% @end
-%%--------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec handle_cast(any(), state()) -> kz_types:handle_cast_ret_state(state()).
 handle_cast('registrar_sync', #state{queue=Q}=State) ->
     Payload = kz_api:default_headers(Q, ?APP_NAME, ?APP_VERSION),
@@ -454,16 +454,10 @@ handle_cast(_Msg, State) ->
     kz_util:put_callid(?DEFAULT_LOG_SYSTEM_ID),
     {'noreply', State}.
 
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Handling all non call/cast messages
-%%
-%% @spec handle_info(Info, State) -> {noreply, State} |
-%%                                   {noreply, State, Timeout} |
-%%                                   {stop, Reason, State}
+%%------------------------------------------------------------------------------
+%% @doc Handling all non call/cast messages.
 %% @end
-%%--------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec handle_info(any(), state()) -> kz_types:handle_info_ret_state(state()).
 handle_info('expire', State) ->
     kz_util:put_callid(?DEFAULT_LOG_SYSTEM_ID),
@@ -479,50 +473,44 @@ handle_info(_Info, State) ->
     lager:debug("unhandled message: ~p", [_Info]),
     {'noreply', State}.
 
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Handling AMQP event objects
-%%
-%% @spec handle_event(JObj, State) -> {reply, Props}
+%%------------------------------------------------------------------------------
+%% @doc Handling AMQP event objects
 %% @end
-%%--------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec handle_event(kz_json:object(), state()) -> gen_listener:handle_event_return().
 handle_event(_JObj, #state{started=Started}) ->
     {'reply', [{'registrar_age', kz_time:now_s() - Started}]}.
 
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% This function is called by a gen_listener when it is about to
-%% terminate. It should be the opposite of Module:init/1 and do any
-%% necessary cleaning up. When it returns, the gen_listener terminates
+%%------------------------------------------------------------------------------
+%% @doc This function is called by a `gen_listener' when it is about to
+%% terminate. It should be the opposite of `Module:init/1' and do any
+%% necessary cleaning up. When it returns, the `gen_listener' terminates
 %% with Reason. The return value is ignored.
 %%
-%% @spec terminate(Reason, State) -> void()
 %% @end
-%%--------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec terminate(any(), any()) -> 'ok'.
 terminate(_Reason, _) ->
     kz_util:put_callid(?DEFAULT_LOG_SYSTEM_ID),
     lager:debug("ecallmgr registrar ~p termination", [_Reason]).
 
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Convert process state when code is changed
-%%
-%% @spec code_change(OldVsn, State, Extra) -> {ok, NewState}
+%%------------------------------------------------------------------------------
+%% @doc Convert process state when code is changed.
 %% @end
-%%--------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec code_change(any(), state(), any()) -> {'ok', state()}.
 code_change(_OldVsn, State, _Extra) ->
     kz_util:put_callid(?DEFAULT_LOG_SYSTEM_ID),
     {'ok', State}.
 
-%%%===================================================================
+%%%=============================================================================
 %%% Internal functions
-%%%===================================================================
+%%%=============================================================================
+
+%%------------------------------------------------------------------------------
+%% @doc
+%% @end
+%%------------------------------------------------------------------------------
 -spec insert_registration(registration()) -> 'ok'.
 insert_registration(#registration{expires=0}=Registration) ->
     lager:info("deleting registration ~s@~s with contact ~s"
@@ -635,7 +623,7 @@ fetch_contact(Username, Realm) ->
             lager:info("found user ~s@~s contact ~s via fetch"
                       ,[Username, Realm, Contact]
                       ),
-            {'ok', Contact};
+            {'ok', Contact, contact_vars(kz_json:to_proplist(JObj))};
         {'error', _R}=Error ->
             lager:info("original contact query for user ~s@~s failed: ~p", [Username, Realm, _R]),
             Error
@@ -792,6 +780,7 @@ create_registration(JObj) ->
     Proxy = kz_json:get_value(<<"Proxy-Path">>, JObj, Reg#registration.proxy),
     ProxyIP = kz_json:get_value(<<"Proxy-IP">>, JObj, Reg#registration.proxy_ip),
     ProxyPort = kz_json:get_integer_value(<<"Proxy-Port">>, JObj, Reg#registration.proxy_port),
+    ProxyProto = kz_json:get_value(<<"Proxy-Protocol">>, JObj, Reg#registration.proxy_proto),
     OriginalContact =
         kz_json:get_first_defined([<<"Original-Contact">>
                                   ,<<"Contact">>
@@ -818,35 +807,35 @@ create_registration(JObj) ->
                                  ,JObj
                                  ,Reg#registration.registrar_hostname
                                  ),
-    augment_registration(
-      Reg#registration{username=Username
-                      ,realm=Realm
-                      ,proxy=Proxy
-                      ,proxy_ip=ProxyIP
-                      ,proxy_port=ProxyPort
-                      ,expires=Expires
-                      ,registrar_node=RegistrarNode
-                      ,registrar_hostname=RegistrarHostname
-                      ,contact=fix_contact(OriginalContact)
-                      ,original_contact=OriginalContact
-                      ,bridge_uri=bridge_uri(OriginalContact, Proxy, Username, Realm)
-                      ,previous_contact=kz_json:get_value(<<"Previous-Contact">>, JObj, Reg#registration.previous_contact)
-                      ,last_registration=kz_json:get_integer_value(<<"Last-Registration">>, JObj, Reg#registration.last_registration)
-                      ,initial_registration=kz_json:get_integer_value(<<"Initial-Registration">>, JObj, Reg#registration.initial_registration)
-                      ,network_port=kz_json:get_value(<<"Network-Port">>, JObj, Reg#registration.network_port)
-                      ,network_ip=kz_json:get_value(<<"Network-IP">>, JObj, Reg#registration.network_ip)
-                      ,to_host=kz_json:get_value(<<"To-Host">>, JObj, Reg#registration.to_host)
-                      ,to_user=kz_json:get_value(<<"To-User">>, JObj, Reg#registration.to_user)
-                      ,from_host=kz_json:get_value(<<"From-Host">>, JObj, Reg#registration.from_host)
-                      ,from_user=kz_json:get_value(<<"From-User">>, JObj, Reg#registration.from_user)
-                      ,call_id=kz_json:get_value(<<"Call-ID">>, JObj, Reg#registration.call_id)
-                      ,user_agent=kz_json:get_value(<<"User-Agent">>, JObj, Reg#registration.user_agent)
-                      ,initial=kz_json:is_true(<<"First-Registration">>, JObj, Reg#registration.initial)
-                      ,source_ip=kz_json:get_value(<<"Source-IP">>, JObj)
-                      ,source_port=kz_json:get_value(<<"Source-Port">>, JObj)
-                      }
+    augment_registration(Reg#registration{username=Username
+                                         ,realm=Realm
+                                         ,proxy=Proxy
+                                         ,proxy_ip=ProxyIP
+                                         ,proxy_port=ProxyPort
+                                         ,proxy_proto=ProxyProto
+                                         ,expires=Expires
+                                         ,registrar_node=RegistrarNode
+                                         ,registrar_hostname=RegistrarHostname
+                                         ,contact=fix_contact(OriginalContact)
+                                         ,original_contact=OriginalContact
+                                         ,bridge_uri=bridge_uri(OriginalContact, Proxy, Username, Realm)
+                                         ,previous_contact=kz_json:get_value(<<"Previous-Contact">>, JObj, Reg#registration.previous_contact)
+                                         ,last_registration=kz_json:get_integer_value(<<"Last-Registration">>, JObj, Reg#registration.last_registration)
+                                         ,initial_registration=kz_json:get_integer_value(<<"Initial-Registration">>, JObj, Reg#registration.initial_registration)
+                                         ,network_port=kz_json:get_value(<<"Network-Port">>, JObj, Reg#registration.network_port)
+                                         ,network_ip=kz_json:get_value(<<"Network-IP">>, JObj, Reg#registration.network_ip)
+                                         ,to_host=kz_json:get_value(<<"To-Host">>, JObj, Reg#registration.to_host)
+                                         ,to_user=kz_json:get_value(<<"To-User">>, JObj, Reg#registration.to_user)
+                                         ,from_host=kz_json:get_value(<<"From-Host">>, JObj, Reg#registration.from_host)
+                                         ,from_user=kz_json:get_value(<<"From-User">>, JObj, Reg#registration.from_user)
+                                         ,call_id=kz_json:get_value(<<"Call-ID">>, JObj, Reg#registration.call_id)
+                                         ,user_agent=kz_json:get_value(<<"User-Agent">>, JObj, Reg#registration.user_agent)
+                                         ,initial=kz_json:is_true(<<"First-Registration">>, JObj, Reg#registration.initial)
+                                         ,source_ip=kz_json:get_value(<<"Source-IP">>, JObj)
+                                         ,source_port=kz_json:get_value(<<"Source-Port">>, JObj)
+                                         }
                         ,JObj
-     ).
+                        ).
 
 -spec augment_registration(registration(), kz_json:object()) -> registration().
 augment_registration(Reg, JObj) ->
@@ -907,11 +896,7 @@ augment_registration(Reg, JObj) ->
 -spec fix_contact(kz_term:api_binary()) -> kz_term:api_binary().
 fix_contact('undefined') -> 'undefined';
 fix_contact(Contact) ->
-    binary:replace(Contact
-                  ,[<<"<">>, <<">">>]
-                  ,<<>>
-                  ,['global']
-                  ).
+    binary:replace(Contact, [<<"<">>, <<">">>], <<>>, ['global']).
 
 -spec bridge_uri(kz_term:api_binary(), kz_term:api_binary(), binary(), binary()) -> kz_term:api_binary().
 bridge_uri(_Contact, 'undefined', _, _) -> 'undefined';
@@ -1182,6 +1167,7 @@ to_props(Reg) ->
       ,{<<"Proxy-Path">>, Reg#registration.proxy}
       ,{<<"Proxy-IP">>, Reg#registration.proxy_ip}
       ,{<<"Proxy-Port">>, Reg#registration.proxy_port}
+      ,{<<"Proxy-Protocol">>, Reg#registration.proxy_proto}
       ,{<<"Expires">>, Reg#registration.expires}
       ,{<<"Account-ID">>, Reg#registration.account_id}
       ,{<<"Account-DB">>, Reg#registration.account_db}
@@ -1240,6 +1226,7 @@ print_summary({[#registration{username=Username
                              ,proxy=Proxy
                              ,proxy_ip=ProxyIP
                              ,proxy_port=ProxyPort
+                             ,proxy_proto=ProxyProto
                              }
                ]
               ,Continuation
@@ -1249,7 +1236,7 @@ print_summary({[#registration{username=Username
     Remaining = (LastRegistration + Expires) - kz_time:now_s(),
     Props = breakup_contact(Contact),
     Hostport = props:get_first_defined(['received', 'hostport'], Props),
-    Path = proxy_path(Proxy, ProxyIP, ProxyPort),
+    Path = proxy_path(Proxy, ProxyIP, ProxyPort, ProxyProto),
     io:format("| ~-45s | ~-22s | ~-22s | ~-32s | ~-4B |~n"
              ,[User, Hostport, Path, CallId, Remaining]
              ),
@@ -1295,16 +1282,17 @@ breakup_contact(Contact) when is_binary(Contact) ->
 breakup_contact(Contact) ->
     breakup_contact(kz_term:to_binary(Contact)).
 
--spec proxy_path(kz_term:api_binary(), kz_term:api_binary(), kz_term:api_integer()) -> binary().
-proxy_path('undefined', 'undefined', 'undefined') -> <<>>;
-proxy_path('undefined', 'undefined', Port) -> proxy_path('undefined', <<>>, Port);
-proxy_path('undefined', IP, 'undefined') -> IP;
-proxy_path('undefined', IP, Port) -> <<IP/binary, ":", (kz_term:to_binary(Port))/binary>>;
-proxy_path(Proxy, _, Port) ->
+-spec proxy_path(kz_term:api_binary(), kz_term:api_binary(), kz_term:api_integer(), kz_term:api_binary()) -> binary().
+proxy_path(Proxy, IP, Port, 'undefined') -> proxy_path(Proxy, IP, Port, <<"udp">>);
+proxy_path('undefined', 'undefined', 'undefined', _) -> <<>>;
+proxy_path('undefined', 'undefined', Port, Proto) -> proxy_path('undefined', <<>>, Port, Proto);
+proxy_path('undefined', IP, 'undefined', Proto) -> <<Proto/binary, ":", IP/binary>>;
+proxy_path('undefined', IP, Port, Proto) -> <<Proto/binary, ":", IP/binary, ":", (kz_term:to_binary(Port))/binary>>;
+proxy_path(Proxy, _, Port, Proto) ->
     Proxy1 = binary:replace(Proxy, <<"sip:">>, <<>>),
     case binary:match(Proxy1, <<":">>) of
-        'nomatch' -> <<Proxy1/binary, ":", (kz_term:to_binary(Port))/binary>>;
-        _ -> Proxy1
+        'nomatch' -> <<Proto/binary, ":", Proxy1/binary, ":", (kz_term:to_binary(Port))/binary>>;
+        _ -> <<Proto/binary, ":", Proxy1/binary>>
     end.
 
 -spec find_contact_parameters(kz_term:ne_binaries(), kz_term:proplist()) -> kz_term:proplist().

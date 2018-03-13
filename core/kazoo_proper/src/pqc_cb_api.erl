@@ -1,3 +1,9 @@
+%%%-----------------------------------------------------------------------------
+%%% @copyright (C) 2010-2018, 2600Hz
+%%% @doc
+%%% @author James Aimonetti
+%%% @end
+%%%-----------------------------------------------------------------------------
 -module(pqc_cb_api).
 
 -export([authenticate/0
@@ -73,9 +79,9 @@ api_key() ->
 
 -spec api_key(kz_term:ne_binary()) -> kz_term:ne_binary().
 api_key(MasterAccountId) ->
-    case kz_account:fetch(MasterAccountId) of
+    case kzd_accounts:fetch(MasterAccountId) of
         {'ok', MasterAccount} ->
-            APIKey = kz_account:api_key(MasterAccount),
+            APIKey = kzd_accounts:api_key(MasterAccount),
             case is_binary(APIKey) of
                 'true' -> APIKey;
                 'false' ->

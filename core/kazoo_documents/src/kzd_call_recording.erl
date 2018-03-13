@@ -1,122 +1,59 @@
-%% Base document module to use when creating new document modules
+%%%-----------------------------------------------------------------------------
+%%% @copyright (C) 2010-2018, 2600Hz
+%%% @doc
+%%% @end
+%%%-----------------------------------------------------------------------------
 -module(kzd_call_recording).
 
--export([new/0
-        ,type/0, type/1
+-export([new/0]).
+-export([any/1, any/2, set_any/2]).
+-export([inbound/1, inbound/2, set_inbound/2]).
+-export([outbound/1, outbound/2, set_outbound/2]).
 
-        ,name/1
-        ,description/1
-        ,content_type/1
-        ,media_type/1
-        ,media_source/1
-        ,source_type/1
-        ,from/1
-        ,to/1
-        ,request/1
-        ,direction/1
-        ,start/1
-        ,duration/1
-        ,duration_ms/1
-        ,caller_id_number/1
-        ,caller_id_name/1
-        ,callee_id_number/1
-        ,callee_id_name/1
-        ,call_id/1
-        ,owner_id/1
-        ,url/1
-        ,cdr_id/1
-        ,interaction_id/1
-        ,origin/1
-        ,custom_channel_vars/1
-        ]).
 
 -include("kz_documents.hrl").
-
--define(PVT_TYPE, <<"call_recording">>).
--define(SCHEMA, <<"call_recordings">>).
 
 -type doc() :: kz_json:object().
 -export_type([doc/0]).
 
+-define(SCHEMA, <<"call_recording">>).
+
 -spec new() -> doc().
 new() ->
-    kz_doc:set_type(kz_json_schema:default_object(?SCHEMA), type()).
+    kz_json_schema:default_object(?SCHEMA).
 
--spec type() -> kz_term:ne_binary().
-type() -> ?PVT_TYPE.
+-spec any(doc()) -> kz_term:api_object().
+any(Doc) ->
+    any(Doc, 'undefined').
 
--spec type(doc()) -> kz_term:ne_binary().
-type(Doc) ->
-    kz_doc:type(Doc, ?PVT_TYPE).
+-spec any(doc(), Default) -> kz_json:object() | Default.
+any(Doc, Default) ->
+    kz_json:get_json_value([<<"any">>], Doc, Default).
 
--spec name(doc()) -> kz_term:ne_binary().
-name(Doc) -> kz_json:get_ne_binary_value(<<"name">>, Doc).
+-spec set_any(doc(), kz_json:object()) -> doc().
+set_any(Doc, Any) ->
+    kz_json:set_value([<<"any">>], Any, Doc).
 
--spec description(doc()) -> kz_term:ne_binary().
-description(Doc) -> kz_json:get_ne_binary_value(<<"description">>, Doc).
+-spec inbound(doc()) -> kz_term:api_object().
+inbound(Doc) ->
+    inbound(Doc, 'undefined').
 
--spec content_type(doc()) -> kz_term:ne_binary().
-content_type(Doc) -> kz_json:get_ne_binary_value(<<"content_type">>, Doc).
+-spec inbound(doc(), Default) -> kz_json:object() | Default.
+inbound(Doc, Default) ->
+    kz_json:get_json_value([<<"inbound">>], Doc, Default).
 
--spec media_type(doc()) -> kz_term:ne_binary().
-media_type(Doc) -> kz_json:get_ne_binary_value(<<"media_type">>, Doc).
+-spec set_inbound(doc(), kz_json:object()) -> doc().
+set_inbound(Doc, Inbound) ->
+    kz_json:set_value([<<"inbound">>], Inbound, Doc).
 
--spec media_source(doc()) -> kz_term:ne_binary().
-media_source(Doc) -> kz_json:get_ne_binary_value(<<"media_source">>, Doc).
+-spec outbound(doc()) -> kz_term:api_object().
+outbound(Doc) ->
+    outbound(Doc, 'undefined').
 
--spec source_type(doc()) -> kz_term:ne_binary().
-source_type(Doc) -> kz_json:get_ne_binary_value(<<"source_type">>, Doc).
+-spec outbound(doc(), Default) -> kz_json:object() | Default.
+outbound(Doc, Default) ->
+    kz_json:get_json_value([<<"outbound">>], Doc, Default).
 
--spec from(doc()) -> kz_term:ne_binary().
-from(Doc) -> kz_json:get_ne_binary_value(<<"from">>, Doc).
-
--spec to(doc()) -> kz_term:ne_binary().
-to(Doc) -> kz_json:get_ne_binary_value(<<"to">>, Doc).
-
--spec request(doc()) -> kz_term:ne_binary().
-request(Doc) -> kz_json:get_ne_binary_value(<<"request">>, Doc).
-
--spec direction(doc()) -> kz_term:ne_binary().
-direction(Doc) -> kz_json:get_ne_binary_value(<<"direction">>, Doc).
-
--spec start(doc()) -> kz_time:gregorian_seconds().
-start(Doc) -> kz_json:get_integer_value(<<"start">>, Doc).
-
--spec duration(doc()) -> non_neg_integer().
-duration(Doc) -> kz_json:get_integer_value(<<"duration">>, Doc).
-
--spec duration_ms(doc()) -> non_neg_integer().
-duration_ms(Doc) -> kz_json:get_integer_value(<<"duration_ms">>, Doc).
-
--spec caller_id_number(doc()) -> kz_term:ne_binary().
-caller_id_number(Doc) -> kz_json:get_ne_binary_value(<<"caller_id_number">>, Doc).
-
--spec caller_id_name(doc()) -> kz_term:ne_binary().
-caller_id_name(Doc) -> kz_json:get_ne_binary_value(<<"caller_id_name">>, Doc).
-
--spec callee_id_number(doc()) -> kz_term:ne_binary().
-callee_id_number(Doc) -> kz_json:get_ne_binary_value(<<"callee_id_number">>, Doc).
-
--spec callee_id_name(doc()) -> kz_term:ne_binary().
-callee_id_name(Doc) -> kz_json:get_ne_binary_value(<<"callee_id_name">>, Doc).
-
--spec call_id(doc()) -> kz_term:ne_binary().
-call_id(Doc) -> kz_json:get_ne_binary_value(<<"call_id">>, Doc).
-
--spec owner_id(doc()) -> kz_term:ne_binary().
-owner_id(Doc) -> kz_json:get_ne_binary_value(<<"owner_id">>, Doc).
-
--spec url(doc()) -> kz_term:ne_binary().
-url(Doc) -> kz_json:get_ne_binary_value(<<"url">>, Doc).
-
--spec cdr_id(doc()) -> kz_term:ne_binary().
-cdr_id(Doc) -> kz_json:get_ne_binary_value(<<"cdr_id">>, Doc).
-
--spec interaction_id(doc()) -> kz_term:ne_binary().
-interaction_id(Doc) -> kz_json:get_ne_binary_value(<<"interaction_id">>, Doc).
-
--spec origin(doc()) -> kz_term:ne_binary().
-origin(Doc) -> kz_json:get_ne_binary_value(<<"origin">>, Doc).
-
--spec custom_channel_vars(doc()) -> kz_json:object().
-custom_channel_vars(Doc) -> kz_json:get_json_value(<<"custom_channel_vars">>, Doc).
+-spec set_outbound(doc(), kz_json:object()) -> doc().
+set_outbound(Doc, Outbound) ->
+    kz_json:set_value([<<"outbound">>], Outbound, Doc).

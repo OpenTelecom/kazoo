@@ -1,12 +1,10 @@
-%%%-------------------------------------------------------------------
-%%% @copyright (C) 2011-2018, 2600Hz, INC
-%%% @doc
-%%% Make a request for authorization, and answer queries about the CallID
+%%%-----------------------------------------------------------------------------
+%%% @copyright (C) 2011-2018, 2600Hz
+%%% @doc Make a request for authorization, and answer queries about the CallID
+%%% @author James Aimonetti
+%%% @author Karl Anderson
 %%% @end
-%%% @contributors
-%%%   James Aimonetti
-%%%   Karl Anderson
-%%%-------------------------------------------------------------------
+%%%-----------------------------------------------------------------------------
 -module(ecallmgr_fs_authz).
 
 -export([authorize/3]).
@@ -183,9 +181,9 @@ authz_response(JObj, Props, CallId, Node) ->
                 'true' -> authorize_account(JObj, Props, CallId, Node);
                 'false' ->
                     %% Set the following CCVs so that we can see why the call was barred in CDRs
-                    ecallmgr_fs_command:set(Node, CallId, [{<<"Account-Billing">>, AccountBilling}
-                                                          ,{<<"Reseller-Billing">>, ResellerBilling}
-                                                          ]),
+                    _ = ecallmgr_fs_command:set(Node, CallId, [{<<"Account-Billing">>, AccountBilling}
+                                                              ,{<<"Reseller-Billing">>, ResellerBilling}
+                                                              ]),
                     _ = kz_util:spawn(fun kill_channel/2, [Props, Node]),
                     'false'
             end

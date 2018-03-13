@@ -27,7 +27,7 @@ Key | Description | Type | Default | Required | Support Level
 `account_id` | Reseller's account ID | `string()` |   | `false` |  
 `carrier` | Friendly name for the carrier providing this rate | `string()` |   | `false` |  
 `description` | Friendly description of the rate | `string()` |   | `false` |  
-`direction.[]` |   | `string()` |   | `false` |  
+`direction.[]` |   | `string('inbound' | 'outbound')` |   | `false` |  
 `direction` | Apply this rate based on the direction of the call (relative to FreeSWITCH) | `array(string('inbound' | 'outbound'))` |   | `false` |  
 `internal_rate_cost` | The per-min rate charged by the upstream provider | `number()` |   | `false` |  
 `iso_country_code` | Country code this rate applies to | `string()` |   | `false` |  
@@ -39,6 +39,7 @@ Key | Description | Type | Default | Required | Support Level
 `rate_minimum` | The minimum time slice, in seconds to bill a call | `integer()` |   | `false` |  
 `rate_name` | Friendly name of the rate | `string()` |   | `false` |  
 `rate_nocharge_time` | If the call duration is shorter than this threshold (seconds), the call is not billed | `integer()` |   | `false` |  
+`rate_suffix` | Suffix applied to rate name | `string()` |   | `false` |  
 `rate_surcharge` | The upfront cost of connecting the call | `number()` |   | `false` |  
 `rate_version` | Rate version | `string()` |   | `false` |  
 `ratedeck_id` | ID of the ratedeck this rate belongs to | `string()` |   | `false` |  

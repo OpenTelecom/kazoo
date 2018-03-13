@@ -1,12 +1,10 @@
-%%%-------------------------------------------------------------------
-%%% @copyright (C) 2011-2018, 2600Hz INC
-%%% @doc
-%%% Handle authn_req messages
+%%%-----------------------------------------------------------------------------
+%%% @copyright (C) 2011-2018, 2600Hz
+%%% @doc Handle authn_req messages
+%%% @author James Aimonetti
+%%% @author Luis Azedo
 %%% @end
-%%% @contributors
-%%%   James Aimonetti
-%%%   Luis Azedo
-%%%-------------------------------------------------------------------
+%%%-----------------------------------------------------------------------------
 -module(reg_authn_req).
 
 -export([init/0
@@ -148,7 +146,7 @@ get_device_presence_id(AccountDb, DeviceId) ->
     case kz_datamgr:open_cache_doc(AccountDb, DeviceId) of
         {'error', _} -> 'undefined';
         {'ok', JObj} ->
-            case kz_device:presence_id(JObj) of
+            case kzd_devices:presence_id(JObj) of
                 'undefined' -> 'undefined';
                 PresenceId -> PresenceId
             end
@@ -190,12 +188,10 @@ create_custom_sip_headers(Props) -> kz_json:from_list(Props).
 get_tel_uri('undefined') -> 'undefined';
 get_tel_uri(Number) -> <<"<tel:", Number/binary,">">>.
 
-%%-----------------------------------------------------------------------------
-%% @private
-%% @doc
-%% look up the user and realm in the database and return the result
+%%------------------------------------------------------------------------------
+%% @doc look up the user and realm in the database and return the result
 %% @end
-%%-----------------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec lookup_auth_user(kz_term:ne_binary(), kz_term:ne_binary(), kz_json:object()) ->
                               {'ok', auth_user()} |
                               {'error', any()}.
@@ -266,12 +262,10 @@ get_auth_user_in_account(Username, Realm, AccountDB) ->
             {'ok', User}
     end.
 
-%%-----------------------------------------------------------------------------
-%% @private
+%%------------------------------------------------------------------------------
 %% @doc
-%%
 %% @end
-%%-----------------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec check_auth_user(kz_json:object(), kz_term:ne_binary(), kz_term:ne_binary(), kz_json:object()) ->
                              {'ok', auth_user()} |
                              {'error', 'disabled'}.
@@ -327,11 +321,11 @@ get_auth_value(JObj) ->
 
 -spec add_account_name(auth_user()) -> auth_user().
 add_account_name(#auth_user{account_id=AccountId}=AuthUser) ->
-    case kz_account:fetch(AccountId) of
+    case kzd_accounts:fetch(AccountId) of
         {'error', _} -> AuthUser;
         {'ok', Account} ->
-            Realm = kz_account:realm(Account),
-            AuthUser#auth_user{account_name = kz_account:name(Account)
+            Realm = kzd_accounts:realm(Account),
+            AuthUser#auth_user{account_name = kzd_accounts:name(Account)
                               ,account_realm = Realm
                               ,account_normalized_realm = kz_term:to_lower_binary(Realm)
                               }
@@ -438,12 +432,10 @@ gsm_auth(#auth_user{method=?GSM_A3A8_METHOD
                              }};
 gsm_auth(AuthUser) -> {'ok', AuthUser}.
 
-%%-----------------------------------------------------------------------------
-%% @private
+%%------------------------------------------------------------------------------
 %% @doc
-%%
 %% @end
-%%-----------------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec get_account_id(kz_json:object()) -> kz_term:api_binary().
 get_account_id(JObj) ->
     case get_account_db(JObj) of
@@ -451,12 +443,10 @@ get_account_id(JObj) ->
         AccountDb -> kz_util:format_account_id(AccountDb, 'raw')
     end.
 
-%%-----------------------------------------------------------------------------
-%% @private
+%%------------------------------------------------------------------------------
 %% @doc
-%%
 %% @end
-%%-----------------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec get_account_db(kz_json:object()) -> kz_term:api_binary().
 get_account_db(JObj) ->
     case kz_json:get_first_defined([[<<"doc">>, <<"pvt_account_db">>]

@@ -1,3 +1,9 @@
+%%%-----------------------------------------------------------------------------
+%%% @copyright (C) 2015-2018, 2600Hz
+%%% @doc Generate schema for Kazoo AMQP APIs.
+%%% @author James Aimonetti
+%%% @end
+%%%-----------------------------------------------------------------------------
 -module(kapi_schemas).
 
 -export([process/0, process_app/1, process_module/1
@@ -391,6 +397,10 @@ validator_properties(<<_/binary>>=Value) ->
 validator_properties([<<_/binary>>|_]=Values) ->
     kz_json:from_list([{<<"type">>, <<"string">>}
                       ,{<<"enum">>, Values}
+                      ]);
+validator_properties({_, 'is_pos_integer', 1}) ->
+    kz_json:from_list([{<<"type">>, <<"integer">>}
+                      ,{<<"minimum">>, 1}
                       ]);
 validator_properties({_, 'is_integer', 1}) ->
     kz_json:from_list([{<<"type">>, <<"integer">>}]);

@@ -1,11 +1,9 @@
-%%%-------------------------------------------------------------------
-%%% @copyright (C) 2015-2018, 2600Hz Inc
+%%%-----------------------------------------------------------------------------
+%%% @copyright (C) 2015-2018, 2600Hz
 %%% @doc
-%%%
+%%% @author Peter Defebvre
 %%% @end
-%%% @contributors
-%%%   Peter Defebvre
-%%%-------------------------------------------------------------------
+%%%-----------------------------------------------------------------------------
 -module(teletype_new_account).
 -behaviour(teletype_gen_email_template).
 
@@ -112,7 +110,7 @@ macros(DataJObj) ->
 -spec admin_user_properties(kz_json:object()) -> kz_term:proplist().
 admin_user_properties(DataJObj) ->
     AccountId = kz_json:get_value(<<"account_id">>, DataJObj),
-    case kz_account:fetch(AccountId) of
+    case kzd_accounts:fetch(AccountId) of
         {'ok', JObj} -> account_admin_user_properties(JObj);
         {'error', _} -> []
     end.

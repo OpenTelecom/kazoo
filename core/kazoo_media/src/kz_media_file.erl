@@ -1,11 +1,9 @@
-%%%-------------------------------------------------------------------
-%%% @copyright (C) 2012-2018, 2600Hz INC
+%%%-----------------------------------------------------------------------------
+%%% @copyright (C) 2012-2018, 2600Hz
 %%% @doc
-%%%
+%%% @author James Aimonetti
 %%% @end
-%%% @contributors
-%%%   James Aimonetti
-%%%-------------------------------------------------------------------
+%%%-----------------------------------------------------------------------------
 -module(kz_media_file).
 
 -export([get_uri/2]).
@@ -24,7 +22,7 @@ get_uri(#media_store_path{}=Store, JObj) ->
     maybe_proxy(JObj, Store);
 get_uri(Media, JObj) when is_binary(Media) ->
     kz_util:put_callid(JObj),
-    Paths = [Path
+    Paths = [kz_http_util:urldecode(Path)
              || Path <- binary:split(Media, <<"/">>, ['global', 'trim']),
                 not kz_term:is_empty(Path)
             ],

@@ -1,11 +1,9 @@
-%%%-------------------------------------------------------------------
-%%% @copyright (C) 2014-2018, 2600Hz Inc
+%%%-----------------------------------------------------------------------------
+%%% @copyright (C) 2014-2018, 2600Hz
 %%% @doc
-%%%
+%%% @author James Aimonetti
 %%% @end
-%%% @contributors
-%%%   James Aimonetti
-%%%-------------------------------------------------------------------
+%%%-----------------------------------------------------------------------------
 -module(teletype_voicemail_to_email).
 -behaviour(teletype_gen_email_template).
 
@@ -141,7 +139,7 @@ maybe_process_req(DataJObj) ->
 
 -spec maybe_process_req(kz_json:object(), boolean()) -> template_response().
 maybe_process_req(DataJObj, false) ->
-    Msg = io_lib:format("request or box ~s has no emails or owner doesn't want emails"
+    Msg = io_lib:format("requestor or box ~s has no emails or owner doesn't want emails"
                        ,[kz_json:get_value(<<"voicemail_box">>, DataJObj)]
                        ),
     lager:debug(Msg),

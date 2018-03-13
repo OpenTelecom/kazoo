@@ -36,6 +36,7 @@ buoyant|bouyant
 business|buisness
 calendar|calender
 camouflage|camoflage camoflague
+canceled|cancelled
 Caribbean|Carribean
 category|catagory
 caught|cauhgt caugt
@@ -52,6 +53,7 @@ congratulate|congradulate
 conscientious|consciencious
 conscious|concious consious
 consensus|concensus
+Convert|Contert
 controversy|contraversy
 coolly|cooly
 daiquiri|dacquiri daquiri
@@ -100,6 +102,7 @@ jewelry|jewelery
 judgment|judgement
 kernel|kernal
 leisure|liesure
+length|lenght
 liaison|liason
 library|libary liberry
 license|lisence
@@ -146,6 +149,7 @@ promise|promiss
 pronunciation|pronounciation
 proof|prufe
 publicly|publically
+quantity|quanity
 quarantine|quarentine
 queue|que
 questionnaire|questionaire questionnair

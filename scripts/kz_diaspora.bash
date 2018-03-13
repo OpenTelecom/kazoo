@@ -4,6 +4,7 @@ pushd "$(dirname "$0")" >/dev/null
 
 ROOT="$(pwd -P)"/..
 
+# replace FROM_MOD FROM_FUN TO_MOD TO_FUN
 replace() {
     local M0=$1
     local F0=$2
@@ -14,6 +15,7 @@ replace() {
     done
 }
 
+# replace_call FromModule ToModule OldFun NewFun Filename
 replace_call() {
     FROM="$1"
     TO="$2"
@@ -203,6 +205,15 @@ kz_util_to_time() {
     search_and_replace fs[@] kz_util kz_time ''
 }
 
+kz_util_to_module() {
+    FROM=kz_util
+    TO=kz_module
+    OLD_FUN=try_load_module
+    NEW_FUN=ensure_loaded
+
+    replace "$FROM" "$OLD_FUN" "$TO" "$NEW_FUN"
+}
+
 kz_time_to_date() {
     local fs=(iso8601_date)
     local fs2=(pad_date
@@ -247,6 +258,37 @@ kz_media_recording_to_kzc_recording() {
     TO=kzc_recording
     for FILE in $(grep -Irl $FROM: "$ROOT"/{core,applications}); do
             replace_call $FROM $TO '' '' "$FILE"
+    done
+}
+
+kzd_accessors() {
+    echo "  * kz_device->kzd_devices"
+    kz_device_to_kzd_devices
+    echo "  * kz_account->kzd_accounts"
+    kz_account_to_kzd_accounts
+}
+
+kz_device_to_kzd_devices() {
+    FROM=kz_device
+    TO=kzd_devices
+    for FILE in $(grep -Irl $FROM: "$ROOT"/{core,applications}); do
+        replace_call $FROM $TO '' '' "$FILE"
+    done
+}
+
+kz_account_to_kzd_accounts() {
+    FROM=kz_account
+    TO=kzd_accounts
+    for FILE in $(grep -Irl $FROM: "$ROOT"/{core,applications}); do
+        replace_call $FROM $TO '' '' "$FILE"
+    done
+}
+
+amqp_util_to_kz_amqp_util() {
+    FROM="amqp_util"
+    TO="kz_amqp_util"
+    for FILE in $(grep -Irl $FROM: "$ROOT"/{core,applications}); do
+        sed -i -e "s%\b$FROM%$TO%g" "$FILE"
     done
 }
 
@@ -298,13 +340,6 @@ change_to_module_type() {
     local REPLACE_TO="\1$MODULE:\4\5"
 
     replace_types "$MODULE" "$GREP_PATTERN" "$SED_PATTERN" "$REPLACE_TO"
-}
-
-change_kz_node_to_module_type() {
-    local GREP_PATTERN="(:{0}(:{2})|([ ,([{>]))(kz_node kz_nodes) *\\("
-    local SED_PATTERN="(:{0}(:{2})|([ ,([{>]))(kz_node kz_nodes)\s*(\(\))"
-
-    replace_types "kz_types" "$GREP_PATTERN" "$SED_PATTERN" "\1kz_types:\4\5"
 }
 
 change_kz_timeout() {
@@ -368,7 +403,7 @@ kz_type_modules() {
                     xml_things
                     whapp_info
                     kapps_info
-                    media_server
+#                    media_server
                     media_serve
                     )
     local kz_term=(text
@@ -432,14 +467,17 @@ kz_type_modules() {
                    unix_seconds
                    api_seconds
                    )
+    local kz_node=(kz_node
+                   kz_nodes
+                  )
     echo "  * ensuring core types migration"
     change_to_module_type "kz_types" kz_types[@]
     echo "  * ensuring term types migration"
     change_to_module_type "kz_term" kz_term[@]
     echo "  * ensuring time types migration"
     change_to_module_type "kz_time" kz_time[@]
-    echo "  * manually checking kz_node types"
-    change_kz_node_to_module_type
+    echo "  * ensuring kz_node/kz_nodes migration"
+    change_to_module_type "kz_types" kz_node[@]
     echo "  * using built in kz_timeout type"
     change_kz_timeout
     echo "  * removing kz_ prefix from kz_types"
@@ -456,6 +494,8 @@ echo "ensuring kz_binary is used"
 kz_util_to_binary
 echo "ensuring kz_time is used"
 kz_util_to_time
+echo "ensuring kz_module is used"
+kz_util_to_module
 echo "ensuring kz_time -> kz_date migration is performed"
 kz_time_to_date
 echo "ensuring kz_json:public/private are moved to kz_doc"
@@ -474,5 +514,9 @@ echo 'ensuring utility calls are not duplicated all over the place'
 dedupe
 echo "ensuring kz_types migration to module is performed"
 kz_type_modules
+echo "updating kazoo document accessors"
+kzd_accessors
+echo "updating amqp_util  to kz_amqp_util"
+amqp_util_to_kz_amqp_util
 
 popd >/dev/null

@@ -1,11 +1,9 @@
-%%%-------------------------------------------------------------------
+%%%-----------------------------------------------------------------------------
 %%% @copyright (C) 2012-2018, 2600Hz
 %%% @doc
-%%%
+%%% @author James Aimonetti
 %%% @end
-%%% @contributors
-%%%   James Aimonetti
-%%%-------------------------------------------------------------------
+%%%-----------------------------------------------------------------------------
 -module(kazoo_data_maintenance).
 
 -include("kz_data.hrl").
@@ -24,6 +22,8 @@
 -export([open_document/2
         ,open_document_cached/2
         ]).
+
+-export([load_doc_from_file/2]).
 
 -spec flush() -> 'ok'.
 flush() ->
@@ -94,3 +94,23 @@ print({ok, JSON}) ->
 print({error, R}) ->
     io:format("ERROR: ~p\n", [R]),
     no_return.
+
+-spec load_doc_from_file(kz_term:ne_binary(), kz_term:ne_binary()) ->
+                                {'ok', kz_json:object()} |
+                                data_error().
+load_doc_from_file(Db, _FilePath) when size(Db) == 0 ->
+    {'error', 'invalid_db_name'};
+load_doc_from_file(Db, FilePath) ->
+    lager:debug("update db ~s from CouchDB file: ~s", [Db, FilePath]),
+    try
+        {'ok', Bin} = file:read_file(FilePath),
+        JObj = kz_datamgr:maybe_adapt_multilines(kz_json:decode(Bin)),
+        kz_datamgr:maybe_update_doc(Db, JObj)
+    catch
+        _Type:{'badmatch',{'error',Reason}} ->
+            lager:debug("bad match: ~p", [Reason]),
+            {'error', Reason};
+        _Type:Reason ->
+            lager:debug("exception: ~p", [Reason]),
+            {'error', Reason}
+    end.

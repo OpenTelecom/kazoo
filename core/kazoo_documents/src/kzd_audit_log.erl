@@ -1,11 +1,9 @@
-%%%-------------------------------------------------------------------
-%%% @copyright (C) 2018, 2600Hz
-%%% @doc
-%%% Audit Log document manipulation
+%%%-----------------------------------------------------------------------------
+%%% @copyright (C) 2010-2018, 2600Hz
+%%% @doc Audit Log document manipulation
+%%% @author James Aimonetti
 %%% @end
-%%% @contributors
-%%%   James Aimonetti
-%%%-------------------------------------------------------------------
+%%%-----------------------------------------------------------------------------
 -module(kzd_audit_log).
 
 -export([audit_account_ids/1
@@ -194,6 +192,6 @@ update_audit_log(Services, AuditLog) ->
                        [{?KEY_ACCOUNT_QUANTITIES, kzd_services:quantities(JObj)}
                        ,{?KEY_DIFF_QUANTITIES, kz_services:diff_quantities(Services)}
                        ,{?KEY_CASCADE_QUANTITIES, kz_services:cascade_quantities(Services)}
-                       ,{<<"account_name">>, kz_account:fetch_name(AccountId)}
+                       ,{<<"account_name">>, kzd_accounts:fetch_name(AccountId)}
                        ])),
     set_audit_account(AuditLog, AccountId, AccountAudit).

@@ -1,6 +1,10 @@
+%%%-----------------------------------------------------------------------------
+%%% @copyright (C) 2015-2018, 2600Hz
+%%% @doc Generate schema for conferences.
+%%% @author James Aimonetti
+%%% @end
+%%%-----------------------------------------------------------------------------
 -module(conference_schema_builder).
-
-%% Generate schema for conferences
 
 -export([process/0
         ,to_schema/0
@@ -26,7 +30,7 @@ to_schema() ->
 
 to_schema(Usage) ->
     Schema = kz_ast_util:schema_path(<<"conferences.json">>),
-    kz_ast_util:ensure_file_exists(Schema),
+    _ = kz_ast_util:ensure_file_exists(Schema),
     update_schema(Schema, Usage).
 
 update_schema(Path, Usage) ->

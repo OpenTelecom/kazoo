@@ -1,13 +1,11 @@
-%%============================================================================
-%%% @copyright (C) 2011-2018 2600Hz Inc
+%%%-----------------------------------------------------------------------------
+%%% @copyright (C) 2011-2018, 2600Hz
 %%% @doc
-%%%
+%%% @author Karl Anderson
+%%% @author James Aimonetti
+%%% @author Sponsored by GTNetwork LLC, Implemented by SIPLABS LLC
 %%% @end
-%%% @contributors
-%%%   Karl Anderson
-%%%   James Aimonetti
-%%%   KAZOO-3596: Sponsored by GTNetwork LLC, implemented by SIPLABS LLC
-%%%============================================================================
+%%%-----------------------------------------------------------------------------
 -module(kapps_call).
 
 -export([new/0, put_callid/1]).
@@ -396,14 +394,13 @@ from_channel_create(JObj) ->
 from_channel_create(JObj, Call) ->
     from_json(JObj, Call).
 
-%%--------------------------------------------------------------------
-%% @public
-%% @doc
-%% READ THIS CAVEAT!!
-%% custom publisher and helper functions are not maintained when
-%% converting to/from json
+%%------------------------------------------------------------------------------
+%% @doc Creates a call record from JSON object.
+%%
+%% <div class="warning">Custom publisher and helper functions are not maintained
+%% when converting to/from JSON</div>
 %% @end
-%%--------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 
 -spec from_json(kz_json:object()) -> call().
 from_json(JObj) ->
@@ -464,14 +461,13 @@ from_json(JObj, #kapps_call{ccvs=OldCCVs
                    ,is_recording = kz_json:is_true(<<"Is-Recording">>, JObj, is_recording(Call))
                    }.
 
-%%--------------------------------------------------------------------
-%% @public
-%% @doc
-%% READ THIS CAVEAT!!
-%% custom publisher and helper functions are not maintained when
-%% converting to/from json
+%%------------------------------------------------------------------------------
+%% @doc Converts a call record to JSON proplist.
+%%
+%% <div class="warning">Custom publisher and helper functions are not maintained
+%% when converting to/from JSON</div>
 %% @end
-%%--------------------------------------------------------------------
+%%------------------------------------------------------------------------------
 -spec to_json(call()) -> kz_json:object().
 to_json(#kapps_call{}=Call) ->
     Props = to_proplist(Call),
@@ -1009,8 +1005,8 @@ account_id(#kapps_call{account_id=AccountId}) ->
 
 -spec account_realm(call()) -> kz_term:ne_binary().
 account_realm(#kapps_call{account_id=AccountId}) ->
-    {'ok', Doc} = kz_account:fetch(AccountId),
-    kz_account:realm(Doc).
+    {'ok', Doc} = kzd_accounts:fetch(AccountId),
+    kzd_accounts:realm(Doc).
 
 -spec set_authorizing_id(kz_term:ne_binary(), call()) -> call().
 set_authorizing_id(AuthorizingId, #kapps_call{}=Call) when is_binary(AuthorizingId) ->
@@ -1372,7 +1368,6 @@ add_to_dtmf_collection(DTMF, Collection, Call) ->
 -spec flush() -> 'ok'.
 flush() ->
     kz_cache:flush_local(?KAPPS_CALL_CACHE).
-
 
 -spec cache(call()) -> 'ok'.
 cache(Call) ->

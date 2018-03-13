@@ -1,11 +1,9 @@
-%%%-------------------------------------------------------------------
+%%%-----------------------------------------------------------------------------
 %%% @copyright (C) 2013-2018, 2600Hz
 %%% @doc
-%%%
+%%% @author Pierre Fenoll
 %%% @end
-%%% @contributors
-%%%   Pierre Fenoll
-%%%-------------------------------------------------------------------
+%%%-----------------------------------------------------------------------------
 -module(kt_compactor).
 %% behaviour: tasks_provider
 
@@ -39,10 +37,14 @@
 
 -type rows() :: [kz_csv:row()] | [].
 
-%%%===================================================================
+%%%=============================================================================
 %%% API
-%%%===================================================================
+%%%=============================================================================
 
+%%------------------------------------------------------------------------------
+%% @doc
+%% @end
+%%------------------------------------------------------------------------------
 -spec init() -> 'ok'.
 init() ->
     ensure_dbs_view(),
@@ -174,8 +176,8 @@ heuristic_from_flag(Force) ->
 -spec is_allowed(kz_tasks:extra_args()) -> boolean().
 is_allowed(ExtraArgs) ->
     AuthAccountId = maps:get('auth_account_id', ExtraArgs),
-    {'ok', AuthAccountDoc} = kz_account:fetch(AuthAccountId),
-    kz_account:is_superduper_admin(AuthAccountDoc).
+    {'ok', AuthAccountDoc} = kzd_accounts:fetch(AuthAccountId),
+    kzd_accounts:is_superduper_admin(AuthAccountDoc).
 
 -spec do_compact_all() -> rows().
 do_compact_all() ->

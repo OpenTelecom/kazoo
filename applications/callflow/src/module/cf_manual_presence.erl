@@ -1,14 +1,19 @@
-%%%-------------------------------------------------------------------
-%%% @copyright (C) 2012-2018, 2600Hz INC
-%%% @doc
-%%% "data":{
-%%%   "presence_id":"foo" // for "foo@bar.com"
-%%%   ,"status":"idle" //"idle", "ringing", "busy"
-%%% }
+%%%-----------------------------------------------------------------------------
+%%% @copyright (C) 2012-2018, 2600Hz
+%%% @doc Allows to control presence feature by calling this Callflow.
+%%%
+%%% <h4>Data options:</h4>
+%%% <dl>
+%%%   <dt>`presence_id'</dt>
+%%%   <dd>Presence ID, e.g. `foo@bar.com' or `foo' (account's realm will be added instead).</dd>
+%%%
+%%%   <dt>`status'</dt>
+%%%   <dd>One of: `idle', `ringing' or 'busy'.</dd>
+%%% </dl>
+%%%
+%%% @author Karl Anderson
 %%% @end
-%%% @contributors
-%%%   Karl Anderson
-%%%-------------------------------------------------------------------
+%%%-----------------------------------------------------------------------------
 -module(cf_manual_presence).
 
 -behaviour(gen_cf_action).
@@ -19,9 +24,10 @@
 
 -spec handle(kz_json:object(), kapps_call:call()) -> 'ok'.
 handle(Data, Call) ->
+    kapps_call_command:answer(Call),
     CaptureGroup = kapps_call:kvs_fetch('cf_capture_group', Call),
     PresenceId =
-        case binary:match((P = kz_device:presence_id(Data, CaptureGroup)), <<"@">>) of
+        case binary:match((P = kzd_devices:presence_id(Data, CaptureGroup)), <<"@">>) of
             'nomatch' -> <<P/binary, "@", (kapps_call:request_realm(Call))/binary>>;
             _Else -> P
         end,

@@ -1,11 +1,9 @@
-%%%-------------------------------------------------------------------
-%%% @copyright (C) 2018, 2600Hz
-%%% @doc
-%%% Handles Konami code configs
+%%%-----------------------------------------------------------------------------
+%%% @copyright (C) 2010-2018, 2600Hz
+%%% @doc Handles Konami code configs
+%%% @author James Aimonetti
 %%% @end
-%%% @contributors
-%%%   James Aimonetti
-%%%-------------------------------------------------------------------
+%%%-----------------------------------------------------------------------------
 -module(konami_config).
 
 -export([numbers/0, numbers/1
@@ -24,10 +22,8 @@
                                        ,{<<"data">>, kz_json:from_list([{<<"text">>, <<"hi">>}])}
                                        ])).
 
--define(DEFAULT_NUMBERS, kz_json:from_list([{<<"2">>, ?META_SAY_HI}
-                                           ])).
--define(DEFAULT_PATTERNS, kz_json:from_list([{<<"^2$">>, ?META_SAY_HI}
-                                            ])).
+-define(DEFAULT_NUMBERS, kz_json:from_list([{<<"2">>, ?META_SAY_HI}])).
+-define(DEFAULT_PATTERNS, kz_json:from_list([{<<"^2$">>, ?META_SAY_HI}])).
 
 -define(DEFAULT_LISTEN_ON, 'a').
 
@@ -125,7 +121,7 @@ get_attribute(JObj, K, DefaultFun, FormatterFun) ->
 
 -spec konami_doc(kz_term:ne_binary()) -> kz_term:api_object().
 konami_doc(Account) ->
-    case kz_account:fetch(Account) of
+    case kzd_accounts:fetch(Account) of
         {'ok', JObj} -> kz_json:get_value(<<"metaflows">>, JObj);
         {'error', 'not_found'} -> 'undefined';
         {'error', _E} ->

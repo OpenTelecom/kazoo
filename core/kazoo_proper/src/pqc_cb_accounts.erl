@@ -1,3 +1,9 @@
+%%%-----------------------------------------------------------------------------
+%%% @copyright (C) 2010-2018, 2600Hz
+%%% @doc
+%%% @author James Aimonetti
+%%% @end
+%%%-----------------------------------------------------------------------------
 -module(pqc_cb_accounts).
 
 -export([create_account/2
@@ -45,7 +51,7 @@ create_account(API, NewAccountName) ->
         andalso allow_number_additions(NewAccountId),
     Resp.
 
--spec allow_number_additions(kz_term:ne_binary()) -> {'ok', kz_account:doc()}.
+-spec allow_number_additions(kz_term:ne_binary()) -> {'ok', kzd_accounts:doc()}.
 allow_number_additions(AccountId) ->
     {'ok', _Account} = kz_util:set_allow_number_additions(AccountId, 'true').
 

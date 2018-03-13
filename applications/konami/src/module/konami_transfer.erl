@@ -1,17 +1,16 @@
-%%%-------------------------------------------------------------------
+%%%-----------------------------------------------------------------------------
 %%% @copyright (C) 2014-2018, 2600Hz
-%%% @doc
-%%% Transfers caller to the extension extracted in the regex
+%%% @doc Transfers caller to the extension extracted in the regex
 %%% Data = {
 %%%   "takeback_dtmf":"2" // Transferor can cancel the transfer request
 %%%   ,"moh":"media_id" // custom music on hold
 %%%   ,"target":"1000" // extension/DID to transfer to
 %%%   ,"ringback":"%(2000,4000,440,480)" // ringback to play to transferor
 %%% }
+%%%
+%%% @author James Aimonetti
 %%% @end
-%%% @contributors
-%%%   James Aimonetti
-%%%-------------------------------------------------------------------
+%%%-----------------------------------------------------------------------------
 -module(konami_transfer).
 
 -behaviour(gen_statem).
@@ -219,14 +218,14 @@ attended_wait('cast', ?EVENT(Transferor, <<"CHANNEL_BRIDGE">>, Evt)
         Target ->
             lager:info("transferor and target ~s are connected, moving to attended_answer", [Target]),
             ?WSD_EVT(Transferor, Target, <<"Bridged to target">>),
-            {'next_state', 'attended_answer', State#state{
-                                                target_call=kapps_call:exec(
-                                                              [{fun kapps_call:set_call_id/2, Target}
-                                                              ,{fun kapps_call:set_other_leg_call_id/2, Transferor}
-                                                              ]
-                                                                           ,TargetCall
-                                                             )
-                                               }};
+
+            NewCall = kapps_call:exec([{fun kapps_call:set_call_id/2, Target}
+                                      ,{fun kapps_call:set_other_leg_call_id/2, Transferor}
+                                      ]
+                                     ,TargetCall
+                                     ),
+
+            {'next_state', 'attended_answer', State#state{target_call=NewCall}};
         Transferee ->
             lager:info("transferor and transferee have reconnected"),
             ?WSD_EVT(Transferor, Transferee, <<"Bridged to transferee">>),
@@ -1331,7 +1330,7 @@ find_moh(Data, Call) ->
 
 -spec find_moh(kapps_call:call()) -> kz_term:api_binary().
 find_moh(Call) ->
-    {'ok', JObj} = kz_account:fetch(kapps_call:account_id(Call)),
+    {'ok', JObj} = kzd_accounts:fetch(kapps_call:account_id(Call)),
     kz_json:get_value([<<"music_on_hold">>, <<"media_id">>], JObj).
 
 -spec issue_transferee_event(kz_term:ne_binary(), kapps_call:call()) -> 'ok'.

@@ -1,11 +1,9 @@
-%%%-------------------------------------------------------------------
+%%%-----------------------------------------------------------------------------
 %%% @copyright (C) 2013-2018, 2600Hz
-%%% @doc
-%%% Helpers for cli commands
+%%% @doc Helpers for cli commands
+%%% @author James Aimonetti
 %%% @end
-%%% @contributors
-%%%   James Aimonetti
-%%%-------------------------------------------------------------------
+%%%-----------------------------------------------------------------------------
 -module(acdc_maintenance).
 
 -export([current_calls/1, current_calls/2
@@ -224,7 +222,7 @@ migrate_to_acdc_db() ->
 -spec maybe_remove_acdc_account(kz_term:ne_binary()) -> 'ok'.
 maybe_remove_acdc_account(<<"_design/", _/binary>>) -> 'ok';
 maybe_remove_acdc_account(AccountId) ->
-    case kz_account:fetch(AccountId) of
+    case kzd_accounts:fetch(AccountId) of
         {'ok', _} -> 'ok';
         {'error', 'not_found'} ->
             {'ok', JObj} = kz_datamgr:open_cache_doc(?KZ_ACDC_DB, AccountId),

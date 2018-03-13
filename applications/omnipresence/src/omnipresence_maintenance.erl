@@ -1,11 +1,9 @@
-%%%-------------------------------------------------------------------
+%%%-----------------------------------------------------------------------------
 %%% @copyright (C) 2013-2018, 2600Hz
-%%% @doc
-%%% Maintenance functions for all
+%%% @doc Maintenance functions for all
+%%% @author James Aimonetti
 %%% @end
-%%% @contributors
-%%%   James Aimonetti
-%%%-------------------------------------------------------------------
+%%%-----------------------------------------------------------------------------
 -module(omnipresence_maintenance).
 
 -include("omnipresence.hrl").
@@ -140,8 +138,8 @@ reset_subscriber(User, Realm) ->
 
 -spec reset_account(kz_term:ne_binary()) -> any().
 reset_account(AccountId) ->
-    case kz_account:fetch(AccountId) of
-        {'ok', JObj} -> reset_realm(kz_account:realm(JObj));
+    case kzd_accounts:fetch(AccountId) of
+        {'ok', JObj} -> reset_realm(kzd_accounts:realm(JObj));
         {'error', _} = Error -> Error
     end.
 
