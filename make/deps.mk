@@ -48,7 +48,7 @@ ifeq ($(USER),travis)
     DEPS += proper
 endif
 
-dep_amqp_client_commit = rabbitmq_v3_6_0
+dep_amqp_client = hex 3.7.3
 dep_apns = git https://github.com/inaka/apns4erl.git 2.2.0
 dep_certifi = hex 0.3.0
 dep_cowboy = git https://github.com/ninenines/cowboy 2.2.0
@@ -67,7 +67,7 @@ dep_erlcloud = git https://github.com/lazedo/erlcloud 54fe6b96eb0bc591b80161fc55
 
 dep_erlazure = git https://github.com/lazedo/erlazure.git add-start-link
 
-dep_couchbeam = git https://github.com/2600hz/couchbeam 1.4.1b
+dep_couchbeam = git https://github.com/2600hz/couchbeam 1.4.1c
 ###dep_couchbeam = git https://github.com/benoitc/couchbeam 1.4.1
 ### waiting for pull requests
 ### https://github.com/benoitc/couchbeam/pull/158
@@ -75,6 +75,7 @@ dep_couchbeam = git https://github.com/2600hz/couchbeam 1.4.1b
 ### https://github.com/benoitc/couchbeam/pull/165
 ### https://github.com/benoitc/couchbeam/pull/166
 ### https://github.com/benoitc/couchbeam/pull/174
+### https://github.com/benoitc/couchbeam/pull/178
 
 dep_jesse = git https://github.com/2600hz/jesse 1.5-rc7
 ##dep_jesse = git https://github.com/for-GET/jesse 1.5.0-rc2

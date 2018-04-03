@@ -201,6 +201,7 @@ pages:
     - 'Conference': 'applications/callflow/doc/conference.md'
     - 'Temporal Routes (Time of Day)': 'applications/callflow/doc/temporal_route.md'
     - 'Webhooks': 'applications/callflow/doc/webhooks.md'
+    - 'EDR Event': 'applications/callflow/doc/edr.md'
     - 'Branch on object setting': 'applications/callflow/doc/cf_branch_variable.md'
     - 'Preflows': 'applications/callflow/doc/preflow.md'
     - 'Resources': 'applications/callflow/doc/resources.md'
@@ -453,3 +454,4 @@ pages:
   - 'Using Dialyzer': 'doc/engineering/dialyzer.md'
   - 'Webhooks': 'doc/engineering/webhooks.md'
   - 'Attachments': 'core/kazoo_attachments/README.md'
+  - 'Attachment Handlers Errors': 'applications/crossbar/doc/att_handlers_errors.md'

@@ -4,6 +4,7 @@ pushd "$(dirname "$0")" >/dev/null
 
 ROOT="$(pwd -P)"/..
 
+# replace FROM_MOD FROM_FUN TO_MOD TO_FUN
 replace() {
     local M0=$1
     local F0=$2
@@ -14,6 +15,7 @@ replace() {
     done
 }
 
+# replace_call FromModule ToModule OldFun NewFun Filename
 replace_call() {
     FROM="$1"
     TO="$2"
@@ -203,6 +205,15 @@ kz_util_to_time() {
     search_and_replace fs[@] kz_util kz_time ''
 }
 
+kz_util_to_module() {
+    FROM=kz_util
+    TO=kz_module
+    OLD_FUN=try_load_module
+    NEW_FUN=ensure_loaded
+
+    replace "$FROM" "$OLD_FUN" "$TO" "$NEW_FUN"
+}
+
 kz_time_to_date() {
     local fs=(iso8601_date)
     local fs2=(pad_date
@@ -270,6 +281,14 @@ kz_account_to_kzd_accounts() {
     TO=kzd_accounts
     for FILE in $(grep -Irl $FROM: "$ROOT"/{core,applications}); do
         replace_call $FROM $TO '' '' "$FILE"
+    done
+}
+
+amqp_util_to_kz_amqp_util() {
+    FROM="amqp_util"
+    TO="kz_amqp_util"
+    for FILE in $(grep -Irl $FROM: "$ROOT"/{core,applications}); do
+        sed -i -e "s%\b$FROM%$TO%g" "$FILE"
     done
 }
 
@@ -475,6 +494,8 @@ echo "ensuring kz_binary is used"
 kz_util_to_binary
 echo "ensuring kz_time is used"
 kz_util_to_time
+echo "ensuring kz_module is used"
+kz_util_to_module
 echo "ensuring kz_time -> kz_date migration is performed"
 kz_time_to_date
 echo "ensuring kz_json:public/private are moved to kz_doc"
@@ -495,5 +516,7 @@ echo "ensuring kz_types migration to module is performed"
 kz_type_modules
 echo "updating kazoo document accessors"
 kzd_accessors
+echo "updating amqp_util  to kz_amqp_util"
+amqp_util_to_kz_amqp_util
 
 popd >/dev/null

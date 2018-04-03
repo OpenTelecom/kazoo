@@ -15,7 +15,7 @@ main([KazooPLT | Args]) ->
             usage(),
             halt(1)
     end,
-    case [Arg || Arg <- Args,
+    case [Arg || Arg <- lists:usort(Args ++ string:tokens(os:getenv("TO_DIALYZE", ""), " ")),
                  not is_test(Arg)
                      andalso (
                        is_ebin_dir(Arg)
@@ -119,12 +119,12 @@ do_warn(PLT, Paths) ->
 ensure_kz_types(Beams) ->
     case lists:any(fun(F) -> filename:basename(F, ".beam") =:= "kz_types" end, Beams) of
         'true' -> Beams;
-        'false' -> [code:which(kz_types) | Beams]
+        'false' -> [code:which('kz_types') | Beams]
     end.
 
 do_warn_path({_, []}, Acc) -> Acc;
 do_warn_path({'beams', Beams}, {N, PLT}) ->
-    try lists:split(10, Beams) of
+    try lists:split(5, Beams) of
         {Ten, Rest} ->
             do_warn_path({'beams', Rest}
                         ,{N + scan_and_print(PLT, Ten), PLT}
@@ -134,7 +134,15 @@ do_warn_path({'beams', Beams}, {N, PLT}) ->
             {N + scan_and_print(PLT, Beams), PLT}
     end;
 do_warn_path({'app', Beams}, {N, PLT}) ->
-    {N + scan_and_print(PLT, Beams), PLT}.
+    try lists:split(5, Beams) of
+        {Ten, Rest} ->
+            do_warn_path({'app', Rest}
+                        ,{N + scan_and_print(PLT, Ten), PLT}
+                        )
+    catch
+        'error':'badarg' ->
+            {N + scan_and_print(PLT, Beams), PLT}
+    end.
 
 scan_and_print(PLT, Bs) ->
     Beams = ensure_kz_types(Bs),
@@ -149,10 +157,10 @@ filter({'warn_undefined_callbacks', _, _}) -> 'false';
 filter({'warn_contract_types', _, {'overlapping_contract',_}}) -> 'false';
 filter(_W) -> 'true'.
 
-print({Tag, {File, Line}, _Warning} = W) ->
-    io:format("~s:~p: ~-30.. s~s~n", [File, Line, Tag, dialyzer:format_warning(W)]);
+print({Tag, {File, Line}, _W}=Warning) ->
+    io:format("~s:~p: ~s~n  ~s~n", [File, Line, Tag, dialyzer:format_warning(Warning)]);
 print(_Err) ->
-    _Err.
+    io:format("error: ~p~n", [_Err]).
 
 scan(PLT, Things) ->
     try do_scan(PLT, Things) of
@@ -166,6 +174,7 @@ do_scan(PLT, Paths) ->
     dialyzer:run([{'init_plt', PLT}
                  ,{'analysis_type', 'succ_typings'}
                   %% ,{'files_rec', [Path]}
+                 ,{'from', 'byte_code'}
                  ,{'files', Paths}
                  ,{'warnings', ['error_handling' %% functions that only return via exception
                                 %% ,no_behaviours  %% suppress warnings about behaviour callbacks
