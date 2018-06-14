@@ -31,7 +31,7 @@ For outbound (to the carrier) formatters, you can see the fields available by lo
 
 Inbound (from the carrier) fields are found in the [kapi_route request schema](https://github.com/2600hz/kazoo/blob/master/applications/crossbar/priv/couchdb/schemas/kapi_route.req.json).
 
-In both of the above cases the request, to and from fields are tracked outside of the mentioned schemas. 
+In both of the above cases the request, to and from fields are tracked outside of the mentioned schemas.
 
 #### Devices, users, accounts
 
@@ -188,3 +188,17 @@ The caller ID presented to the device can be altered by creating a formatter obj
 ```
 
 This would match caller id numbers that end with 10 digits and capture them as the value to be used.
+
+### Remove Caller-ID-Name from SIP From Header
+
+To remove Caller-ID-Name from SIP From Header for outbound calls you sould set static value ['\_undef_'](https://freeswitch.org/jira/browse/FS-942) for the 'outbound_caller_id_name' formatter:
+
+```json
+"formatters": {
+    "outbound_caller_id_name": [
+        {
+            "value": "_undef_"
+        }
+    ]
+}
+```

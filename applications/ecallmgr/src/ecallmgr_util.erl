@@ -646,6 +646,8 @@ get_fs_key_and_value(_, _, _) -> 'skip'.
 %% @end
 %%------------------------------------------------------------------------------
 -spec maybe_sanitize_fs_value(kz_term:text(), kz_term:text()) -> binary().
+maybe_sanitize_fs_value(<<"Outbound-Caller-ID-Name">>, <<"_undef_">>) ->
+    <<"_undef_">>;
 maybe_sanitize_fs_value(<<"Outbound-Caller-ID-Name">>, Val) ->
     re:replace(Val, <<"[^a-zA-Z0-9-\s]">>, <<>>, ['global', {'return', 'binary'}]);
 maybe_sanitize_fs_value(<<"Outbound-Callee-ID-Name">>, Val) ->
