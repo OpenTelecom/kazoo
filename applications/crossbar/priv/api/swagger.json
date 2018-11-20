@@ -28862,6 +28862,43 @@
             },
             "type": "object"
         },
+        "system_config.crossbar.homer": {
+            "description": "Schema for crossbar.homer system_config",
+            "properties": {
+                "homer_sessid": {
+                    "default": "change_me",
+                    "description": "The session id to use with Homer",
+                    "type": "string"
+                },
+                "password": {
+                    "default": "change_me",
+                    "description": "The password to use for authenticating with Homer",
+                    "type": "string"
+                },
+                "retention_hours": {
+                    "default": 72,
+                    "description": "How long the Homer search period should be, in hours",
+                    "minimum": 1,
+                    "type": "integer"
+                },
+                "timezone": {
+                    "default": "Etc/UTC",
+                    "description": "The timezone that Homer requests should use. Defaults to UTC",
+                    "type": "string"
+                },
+                "url": {
+                    "default": "change_me",
+                    "description": "The URL that homer should be accessed at",
+                    "type": "string"
+                },
+                "username": {
+                    "default": "change_me",
+                    "description": "The username to use for authenticating with Homer",
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
         "system_config.crossbar.local_resources": {
             "description": "Schema for crossbar.local_resources system_config",
             "properties": {
@@ -34794,6 +34831,12 @@
             "required": true,
             "type": "string"
         },
+        "FROM_ID": {
+            "in": "path",
+            "name": "FROM_ID",
+            "required": true,
+            "type": "string"
+        },
         "FUNCTION": {
             "in": "path",
             "name": "FUNCTION",
@@ -38552,6 +38595,46 @@
                     },
                     {
                         "$ref": "#/parameters/GROUP_ID"
+                    },
+                    {
+                        "$ref": "#/parameters/ACCOUNT_ID"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "request succeeded"
+                    }
+                }
+            }
+        },
+        "/accounts/{ACCOUNT_ID}/homer/call/{CALL_ID}": {
+            "get": {
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/auth_token_header"
+                    },
+                    {
+                        "$ref": "#/parameters/CALL_ID"
+                    },
+                    {
+                        "$ref": "#/parameters/ACCOUNT_ID"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "request succeeded"
+                    }
+                }
+            }
+        },
+        "/accounts/{ACCOUNT_ID}/homer/registration/{FROM_ID}": {
+            "get": {
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/auth_token_header"
+                    },
+                    {
+                        "$ref": "#/parameters/FROM_ID"
                     },
                     {
                         "$ref": "#/parameters/ACCOUNT_ID"

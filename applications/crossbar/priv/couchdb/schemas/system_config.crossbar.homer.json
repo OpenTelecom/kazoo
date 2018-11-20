@@ -1,0 +1,39 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "_id": "system_config.crossbar.homer",
+    "description": "Schema for crossbar.homer system_config",
+    "properties": {
+        "homer_sessid": {
+            "default": "change_me",
+            "description": "The session id to use with Homer",
+            "type": "string"
+        },
+        "password": {
+            "default": "change_me",
+            "description": "The password to use for authenticating with Homer",
+            "type": "string"
+        },
+        "retention_hours": {
+            "default": 72,
+            "description": "How long the Homer search period should be, in hours",
+            "minimum": 1,
+            "type": "integer"
+        },
+        "timezone": {
+            "default": "Etc/UTC",
+            "description": "The timezone that Homer requests should use. Defaults to UTC",
+            "type": "string"
+        },
+        "url": {
+            "default": "change_me",
+            "description": "The URL that homer should be accessed at",
+            "type": "string"
+        },
+        "username": {
+            "default": "change_me",
+            "description": "The username to use for authenticating with Homer",
+            "type": "string"
+        }
+    },
+    "type": "object"
+}
