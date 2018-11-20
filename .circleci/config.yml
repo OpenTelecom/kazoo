@@ -119,3 +119,46 @@ jobs:
         path: /tmp/circleci-artifacts
     - store_artifacts:
         path: /tmp/circleci-test-results
+
+  upstream_sync_master:
+    working_directory: ~/2600hz/kazoo
+    docker:
+      - image: circleci/python:3.6.5-jessie
+    steps:
+      - checkout
+      - run: ./scripts/sync-upstream-git.sh master
+
+  upstream_sync_41:
+    working_directory: ~/2600hz/kazoo
+    docker:
+      - image: circleci/python:3.6.5-jessie
+    steps:
+      - checkout
+      - run: ./scripts/sync-upstream-git.sh 4.1
+
+  upstream_sync_42:
+    working_directory: ~/2600hz/kazoo
+    docker:
+      - image: circleci/python:3.6.5-jessie
+    steps:
+      - checkout
+      - run: ./scripts/sync-upstream-git.sh 4.2
+
+workflows:
+  version: 2
+  commit:
+    jobs:
+      - build
+
+  nightly:
+    jobs:
+      - upstream_sync_master
+      - upstream_sync_41
+      - upstream_sync_42
+    triggers:
+      - schedule:
+          cron: 0 * * * *
+          filters:
+            branches:
+              only:
+                - otf-master
