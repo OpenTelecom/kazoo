@@ -20,6 +20,7 @@
 -include("crossbar.hrl").
 
 -ifdef(TEST).
+-spec test() -> 'ok'.
 -include("test/cb_callflows_test.hrl").
 -endif.
 

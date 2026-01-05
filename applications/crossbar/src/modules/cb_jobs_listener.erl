@@ -183,8 +183,8 @@ create_number(Job, AccountId, AuthAccountId, CarrierModule, DID) ->
             update_with_failure(Job, AccountId, DID, Failure, JObj)
     catch
         E:_R ->
-            ST = erlang:get_stacktrace(),
-            kz_util:log_stacktrace(ST),
+%%            ST = erlang:get_stacktrace(),
+%%            kz_util:log_stacktrace(ST),
             lager:debug("exception creating number ~s for account ~s: ~s: ~p"
                        ,[DID, AccountId, E, _R]),
             update_status(kz_json:set_value([<<"errors">>, DID]
