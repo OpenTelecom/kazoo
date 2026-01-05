@@ -226,7 +226,7 @@ is_task_successful(MappedRow
             %% Stop on crashes, but only skip typefailed rows.
             {'false', Columns, Written, IterValue}
     catch
-        ?STACKTRACE(_, _R, ST)
+        _:_R:ST ->
             lager:error("verifier crashed: ~p", [_R]),
             kz_util:log_stacktrace(ST),
             {Columns,Written} = store_return(State, MappedRow, ?WORKER_TASK_MAYBE_OK),

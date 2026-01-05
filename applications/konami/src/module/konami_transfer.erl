@@ -136,7 +136,7 @@ handle(Data, Call) ->
         _ -> 'ok'
     catch
         'exit':'normal' -> 'ok';
-        ?STACKTRACE(_E, _R, ST)
+        _E:_R:ST ->
             lager:info("statem terminated abnormally: ~s: ~p", [_E, _R]),
             kz_util:log_stacktrace(ST)
     end.
