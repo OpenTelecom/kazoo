@@ -1,5 +1,5 @@
 ERL ?= erl
-REBAR3 ?= rebar3
+REBAR3 ?= ./rebar3
 
 ERLFLAGS = -pa ./.eunit -pa ./ebin -pa ./deps/*/ebin
 
@@ -32,7 +32,7 @@ CHECK_RELEASE_TOOLS = \
 .PHONY: all compile doc clean lint format format-check tree test ct dialyzer \
 	dialyzer typer shell distclean deps update-deps clean-common-test-data \
 	rebuild compile_test build-release build-release-debug build-release-tar \
-	escript
+	build-dev escript
 
 all: build-release
 
@@ -84,6 +84,10 @@ build-release-debug:
 build-release-tar:
 	@$(CHECK_RELEASE_TOOLS)
 	$(REBAR) as prod tar
+
+build-dev:
+	@$(CHECK_RELEASE_TOOLS)
+	$(REBAR) as dev release
 
 doc:
 	@$(CHECK_TOOLS)
