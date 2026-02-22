@@ -370,8 +370,9 @@ weighted_random_sort(Endpoints) ->
 weighted_random_sort([_ | _] = ListWeight, Acc) ->
     [{Sum, _} | _] = ListInterval = set_intervals_on_weight(ListWeight, [], 0),
     Pivot = random_integer(Sum),
-    {_W, {_Id, _Endpoint} = Element} = weighted_random_get_element(ListInterval, Pivot),
-    ListNew = lists:delete(Element, ListWeight),
+    {_CumW, {_W, _} = WElement} = weighted_random_get_element(ListInterval, Pivot),
+    Element = element(2, WElement),
+    ListNew = lists:delete(WElement, ListWeight),
     weighted_random_sort(ListNew, [Element | Acc]);
 weighted_random_sort([], Acc) ->
     Acc.
